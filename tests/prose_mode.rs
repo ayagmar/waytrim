@@ -125,3 +125,23 @@ fn prose_preserves_mixed_pi_command_block_fixture() {
     assert!(meta.preserve.iter().any(|value| value == "command blocks"));
     assert_eq!(output, fixture_output("prose/pi/mixed-command-block"));
 }
+
+#[test]
+fn prose_preserves_alignment_sensitive_columns_fixture() {
+    let input = fixture_input("prose/negative/aligned-columns");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/negative/aligned-columns");
+
+    assert!(meta.preserve.iter().any(|value| value == "aligned columns"));
+    assert_eq!(output, fixture_output("prose/negative/aligned-columns"));
+}
+
+#[test]
+fn prose_leaves_already_clean_paragraph_fixture_unchanged() {
+    let input = fixture_input("prose/negative/already-clean");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/negative/already-clean");
+
+    assert!(meta.avoid.iter().any(|value| value == "rewrite"));
+    assert_eq!(output, fixture_output("prose/negative/already-clean"));
+}

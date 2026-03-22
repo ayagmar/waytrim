@@ -222,3 +222,39 @@ fn clipboard_flow_repairs_mixed_pi_prose_without_changing_command_block() {
     assert_eq!(output.status, ClipboardFlowStatus::Updated);
     assert_eq!(clipboard.current(), expected);
 }
+
+#[test]
+fn clipboard_flow_reports_unchanged_for_alignment_sensitive_fixture() {
+    let input = fixture_input("prose/negative/aligned-columns");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = CliConfig {
+        mode: Mode::Prose,
+        clipboard: true,
+        preview: false,
+        print: false,
+    };
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Unchanged);
+    assert!(clipboard.writes().is_empty());
+}
+
+#[test]
+fn clipboard_preview_reports_no_changes_for_already_clean_fixture() {
+    let input = fixture_input("prose/negative/already-clean");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = CliConfig {
+        mode: Mode::Prose,
+        clipboard: true,
+        preview: true,
+        print: false,
+    };
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Preview);
+    assert!(output.stdout.contains("(no changes)"));
+    assert!(output.stderr.contains("clipboard preview only"));
+    assert!(clipboard.writes().is_empty());
+}

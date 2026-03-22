@@ -1,0 +1,3 @@
+Waytrim should leave already-clean prose alone when no repair is needed.
+
+That keeps trust high for manual and clipboard-driven workflows.

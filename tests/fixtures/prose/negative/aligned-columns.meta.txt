@@ -1,0 +1,3 @@
+notes: alignment-sensitive help text copied from terminal output
+preserve: aligned columns, table-ish text
+avoid: paragraph-merge, spacing-collapse

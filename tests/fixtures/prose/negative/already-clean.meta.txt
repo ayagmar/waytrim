@@ -1,0 +1,3 @@
+notes: already-clean prose should remain unchanged
+preserve: paragraphs
+avoid: rewrite, unnecessary-change

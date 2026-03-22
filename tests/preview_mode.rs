@@ -48,3 +48,13 @@ fn preview_repairs_mixed_pi_prose_without_collapsing_command_block() {
     assert!(output.contains(r#"+cargo test \"#));
     assert!(output.contains(r#"+  --test clipboard_flow \"#));
 }
+
+#[test]
+fn preview_reports_no_changes_for_already_clean_fixture() {
+    let input = fixture_input("prose/negative/already-clean");
+    let output = run_waytrim(&["prose", "--preview"], &input);
+
+    assert!(output.contains("--- before"));
+    assert!(output.contains("+++ after"));
+    assert!(output.contains("(no changes)"));
+}

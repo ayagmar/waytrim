@@ -1,0 +1,4 @@
+Mode             Behavior
+prose            Repair wrapped prose
+command          Clean copied commands
+auto             Stay conservative

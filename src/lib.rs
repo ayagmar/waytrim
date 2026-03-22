@@ -94,6 +94,7 @@ fn repair_prose(input: &str) -> String {
     let mut active_quote: Option<String> = None;
     let mut in_fenced_code = false;
     let mut in_command_block = false;
+    let mut in_aligned_block = false;
 
     let flush_paragraph = |paragraph: &mut Vec<String>, output_lines: &mut Vec<String>| {
         if paragraph.is_empty() {
@@ -126,7 +127,9 @@ fn repair_prose(input: &str) -> String {
         output_lines.push(quote);
     };
 
-    for raw_line in input.lines() {
+    let mut lines = input.lines().peekable();
+
+    while let Some(raw_line) = lines.next() {
         let line = raw_line.trim_end();
         let trimmed = line.trim();
 
@@ -154,6 +157,29 @@ fn repair_prose(input: &str) -> String {
                 output_lines.push(String::new());
             }
 
+            continue;
+        }
+
+        if in_aligned_block {
+            if looks_like_aligned_columns_line(line) {
+                output_lines.push(line.to_string());
+                continue;
+            }
+
+            in_aligned_block = false;
+        }
+
+        if looks_like_aligned_columns_line(line)
+            && lines
+                .peek()
+                .is_some_and(|next| looks_like_aligned_columns_line(next.trim_end()))
+        {
+            flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_list_item(&mut list_item, &mut output_lines);
+            flush_quote(&mut active_quote, &mut output_lines);
+            in_command_block = false;
+            in_aligned_block = true;
+            output_lines.push(line.to_string());
             continue;
         }
 
@@ -510,6 +536,39 @@ fn is_protected_line(line: &str) -> bool {
         || line.starts_with('\t')
         || is_bullet_line(trimmed)
         || is_numbered_line(trimmed)
+}
+
+fn looks_like_aligned_columns_line(line: &str) -> bool {
+    let trimmed = line.trim();
+    if trimmed.is_empty() || trimmed.starts_with("```") {
+        return false;
+    }
+
+    let mut segments = 0;
+    let mut in_segment = false;
+    let mut spaces = 0;
+    let mut saw_wide_gap = false;
+
+    for ch in trimmed.chars() {
+        if ch.is_whitespace() {
+            spaces += 1;
+            if in_segment && spaces >= 2 {
+                segments += 1;
+                in_segment = false;
+                saw_wide_gap = true;
+            }
+            continue;
+        }
+
+        spaces = 0;
+        in_segment = true;
+    }
+
+    if in_segment {
+        segments += 1;
+    }
+
+    saw_wide_gap && segments >= 2
 }
 
 fn is_bullet_line(trimmed: &str) -> bool {

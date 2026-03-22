@@ -58,3 +58,11 @@ fn auto_declines_to_rewrite_mixed_pi_command_block_fixture() {
         fixture_output("auto/ambiguous/pi-mixed-command-block")
     );
 }
+
+#[test]
+fn auto_declines_to_rewrite_alignment_sensitive_columns_fixture() {
+    let input = fixture_input("auto/ambiguous/aligned-columns");
+    let output = run_waytrim(&["auto"], &input);
+
+    assert_eq!(output, fixture_output("auto/ambiguous/aligned-columns"));
+}
