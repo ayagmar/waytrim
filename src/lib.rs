@@ -18,6 +18,29 @@ impl Mode {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AutoPolicy {
+    Conservative,
+    ProsePreferred,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RepairPolicy {
+    pub protect_aligned_columns: bool,
+    pub protect_command_blocks: bool,
+    pub auto_policy: AutoPolicy,
+}
+
+impl Default for RepairPolicy {
+    fn default() -> Self {
+        Self {
+            protect_aligned_columns: true,
+            protect_command_blocks: true,
+            auto_policy: AutoPolicy::Conservative,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExplainStep {
     pub message: String,
@@ -31,10 +54,14 @@ pub struct RepairResult {
 }
 
 pub fn repair(input: &str, mode: Mode) -> RepairResult {
+    repair_with_policy(input, mode, &RepairPolicy::default())
+}
+
+pub fn repair_with_policy(input: &str, mode: Mode, policy: &RepairPolicy) -> RepairResult {
     let (output, explain) = match mode {
-        Mode::Prose => repair_prose(input),
+        Mode::Prose => repair_prose(input, policy),
         Mode::Command => repair_command(input),
-        Mode::Auto => repair_auto(input),
+        Mode::Auto => repair_auto(input, policy),
     };
 
     RepairResult {
@@ -110,7 +137,7 @@ pub fn render_explain(mode: Mode, result: &RepairResult) -> String {
     output
 }
 
-fn repair_auto(input: &str) -> (String, Vec<ExplainStep>) {
+fn repair_auto(input: &str, policy: &RepairPolicy) -> (String, Vec<ExplainStep>) {
     if looks_like_command(input) {
         let (output, mut explain) = repair_command(input);
         explain.insert(
@@ -144,8 +171,11 @@ fn repair_auto(input: &str) -> (String, Vec<ExplainStep>) {
         );
     }
 
-    if looks_like_prose(input) {
-        let (output, mut explain) = repair_prose(input);
+    if looks_like_prose(input)
+        || matches!(policy.auto_policy, AutoPolicy::ProsePreferred)
+            && looks_like_soft_wrapped_prose(input)
+    {
+        let (output, mut explain) = repair_prose(input, policy);
         explain.insert(
             0,
             ExplainStep {
@@ -158,7 +188,7 @@ fn repair_auto(input: &str) -> (String, Vec<ExplainStep>) {
     (minimal_prose_safe_cleanup(input), Vec::new())
 }
 
-fn repair_prose(input: &str) -> (String, Vec<ExplainStep>) {
+fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<ExplainStep>) {
     let mut output_lines = Vec::new();
     let mut paragraph = Vec::new();
     let mut paragraph_start_line = None;
@@ -215,7 +245,11 @@ fn repair_prose(input: &str) -> (String, Vec<ExplainStep>) {
 
         if in_aligned_block {
             if looks_like_aligned_columns_line(line) {
-                output_lines.push(line.to_string());
+                output_lines.push(if policy.protect_aligned_columns {
+                    line.to_string()
+                } else {
+                    normalize_inline_spacing(line)
+                });
                 continue;
             }
 
@@ -237,7 +271,11 @@ fn repair_prose(input: &str) -> (String, Vec<ExplainStep>) {
             flush_quote(&mut active_quote, &mut output_lines);
             in_command_block = false;
             in_aligned_block = true;
-            output_lines.push(line.to_string());
+            output_lines.push(if policy.protect_aligned_columns {
+                line.to_string()
+            } else {
+                normalize_inline_spacing(line)
+            });
             continue;
         }
 
@@ -250,8 +288,43 @@ fn repair_prose(input: &str) -> (String, Vec<ExplainStep>) {
             );
             flush_list_item(&mut list_item, &mut output_lines);
             flush_quote(&mut active_quote, &mut output_lines);
-            in_command_block = true;
-            output_lines.push(line.to_string());
+
+            if policy.protect_command_blocks {
+                in_command_block = true;
+                output_lines.push(line.to_string());
+                continue;
+            }
+
+            let mut command_block = vec![line.to_string()];
+
+            while let Some((_, next_raw_line)) = lines.peek() {
+                let next_line = next_raw_line.trim_end();
+                let next_trimmed = next_line.trim();
+
+                if next_trimmed.is_empty() {
+                    break;
+                }
+
+                if is_command_block_continuation_line(next_line)
+                    || looks_like_shell_line(next_trimmed)
+                {
+                    command_block.push(next_line.to_string());
+                    lines.next();
+                    continue;
+                }
+
+                break;
+            }
+
+            let (command_output, command_explain) =
+                repair_command(&finish_with_newline(command_block.join("\n")));
+            explain.extend(command_explain);
+            output_lines.extend(
+                command_output
+                    .trim_end_matches('\n')
+                    .lines()
+                    .map(ToOwned::to_owned),
+            );
             continue;
         }
 
@@ -575,6 +648,22 @@ fn looks_like_prose(input: &str) -> bool {
         .count();
 
     sentence_like >= 1 && lines.iter().all(|line| !looks_like_shell_line(line))
+}
+
+fn looks_like_soft_wrapped_prose(input: &str) -> bool {
+    let lines: Vec<_> = input
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect();
+
+    lines.len() >= 3
+        && lines.iter().all(|line| {
+            !looks_like_shell_line(line)
+                && !is_protected_line(line)
+                && !looks_like_aligned_columns_line(line)
+                && line.contains(' ')
+        })
 }
 
 fn looks_like_command_transcript(input: &str) -> bool {
