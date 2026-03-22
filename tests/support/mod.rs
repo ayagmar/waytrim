@@ -1,8 +1,12 @@
 #![allow(dead_code)]
 
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 
 pub struct CommandOutput {
     pub status: ExitStatus,
@@ -93,5 +97,28 @@ impl FixtureMeta {
         }
 
         meta
+    }
+}
+
+pub fn temp_file_path(stem: &str) -> PathBuf {
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+
+    let unique = COUNTER.fetch_add(1, Ordering::Relaxed);
+    std::env::temp_dir().join(format!("waytrim-{stem}-{}-{unique}", std::process::id()))
+}
+
+pub fn write_executable_script(stem: &str, contents: &str) -> PathBuf {
+    let path = temp_file_path(stem);
+    fs::write(&path, contents).expect("write script");
+    set_executable(&path);
+    path
+}
+
+fn set_executable(path: &Path) {
+    #[cfg(unix)]
+    {
+        let mut permissions = fs::metadata(path).expect("script metadata").permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(path, permissions).expect("set script executable permissions");
     }
 }
