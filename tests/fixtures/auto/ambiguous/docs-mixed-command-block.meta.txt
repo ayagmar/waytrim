@@ -1,0 +1,3 @@
+notes: mixed docs prose plus command block should stay conservative in auto mode
+preserve: paragraphs, command blocks
+avoid: command-collapse, prose-overreach

@@ -36,3 +36,25 @@ fn auto_declines_to_rewrite_pi_command_plus_output_snippet() {
         fixture_output("auto/ambiguous/pi-command-plus-output")
     );
 }
+
+#[test]
+fn auto_declines_to_rewrite_mixed_docs_command_block_fixture() {
+    let input = fixture_input("auto/ambiguous/docs-mixed-command-block");
+    let output = run_waytrim(&["auto"], &input);
+
+    assert_eq!(
+        output,
+        fixture_output("auto/ambiguous/docs-mixed-command-block")
+    );
+}
+
+#[test]
+fn auto_declines_to_rewrite_mixed_pi_command_block_fixture() {
+    let input = fixture_input("auto/ambiguous/pi-mixed-command-block");
+    let output = run_waytrim(&["auto"], &input);
+
+    assert_eq!(
+        output,
+        fixture_output("auto/ambiguous/pi-mixed-command-block")
+    );
+}
