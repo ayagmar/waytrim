@@ -1,0 +1,3 @@
+notes: structured text that should remain unchanged
+preserve: bullets, indented-section
+avoid: paragraph-merge

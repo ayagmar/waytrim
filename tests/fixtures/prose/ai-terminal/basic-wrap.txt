@@ -1,0 +1,4 @@
+Here is a copied answer from a terminal-style AI tool with awkward
+spacing  inside the paragraph and wrapping that should be repaired.
+
+It should keep the paragraph break, but remove the display noise.

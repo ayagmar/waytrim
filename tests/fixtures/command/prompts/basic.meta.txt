@@ -1,0 +1,3 @@
+notes: obvious shell prompt with continuation
+preserve: shell-syntax
+avoid: shell-interpretation

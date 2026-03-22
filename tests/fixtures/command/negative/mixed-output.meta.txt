@@ -1,0 +1,3 @@
+notes: command with output should not be parsed as a pure command block
+preserve: transcript-shape
+avoid: transcript-parsing

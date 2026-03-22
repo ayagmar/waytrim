@@ -1,0 +1,3 @@
+notes: ai terminal prose, wrapped paragraph, spacing noise
+preserve: paragraphs
+avoid: reflow, markdown-prettify

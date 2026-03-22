@@ -1,0 +1,4 @@
+- Keep this bullet exactly as written.
+- Do not merge this second bullet into prose.
+
+    indented section should stay indented
