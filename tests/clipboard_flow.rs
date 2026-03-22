@@ -204,3 +204,21 @@ fn clipboard_flow_reports_unchanged_for_pi_fenced_code_fixture() {
 
     assert_eq!(output.status, ClipboardFlowStatus::Unchanged);
 }
+
+#[test]
+fn clipboard_flow_repairs_mixed_pi_prose_without_changing_command_block() {
+    let input = fixture_input("prose/pi/mixed-command-block");
+    let expected = fixture_output("prose/pi/mixed-command-block");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = CliConfig {
+        mode: Mode::Prose,
+        clipboard: true,
+        preview: false,
+        print: false,
+    };
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Updated);
+    assert_eq!(clipboard.current(), expected);
+}

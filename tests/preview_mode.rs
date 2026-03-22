@@ -34,3 +34,17 @@ fn preview_shows_pi_answer_wrap_changes() {
     assert!(output.contains("+++ after"));
     assert!(output.contains("+You probably want to send copied TUI output through the same cleanup path used for stdin so hard-wrapped assistant replies become normal paragraphs again."));
 }
+
+#[test]
+fn preview_repairs_mixed_pi_prose_without_collapsing_command_block() {
+    let input = fixture_input("prose/pi/mixed-command-block");
+    let output = run_waytrim(&["prose", "--preview"], &input);
+
+    assert!(output.contains("--- before"));
+    assert!(output.contains("+++ after"));
+    assert!(output.contains(
+        "+If you only want the clipboard regression, run this command after copying the reply:"
+    ));
+    assert!(output.contains(r#"+cargo test \"#));
+    assert!(output.contains(r#"+  --test clipboard_flow \"#));
+}
