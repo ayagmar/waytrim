@@ -25,8 +25,8 @@ The CLI reads from stdin and writes cleaned text to stdout by default. In clipbo
 ### `prose`
 - primary mode
 - repairs wrapped paragraphs and copy-induced spacing noise
-- preserves visible structure such as bullets, headings, blockquotes, fenced code blocks, and indented sections
-- repairs obvious wrapped blockquotes while leaving fenced code untouched
+- preserves visible structure such as bullets, headings, blockquotes, fenced code blocks, indented sections, and obvious standalone command blocks inside mixed prose snippets
+- repairs obvious wrapped blockquotes while leaving fenced code and standalone command blocks untouched
 
 ### `command`
 - bounded secondary mode
@@ -38,6 +38,7 @@ The CLI reads from stdin and writes cleaned text to stdout by default. In clipbo
 - conservative convenience mode
 - chooses command cleanup when the input is clearly command-like
 - declines to merge short label-plus-command snippets such as `Install command:` followed by a command
+- stays conservative on mixed prose-plus-command snippets and falls back to minimal prose-safe cleanup
 - otherwise prefers prose repair or minimal prose-safe cleanup
 
 ## Preview
@@ -83,8 +84,9 @@ Current corpus coverage includes:
 - PI/TUI wrapped prose paragraphs
 - PI/TUI wrapped bullet and numbered-list continuations
 - wrapped doc and PI blockquotes
+- mixed doc and PI prose with preserved standalone command blocks
 - fenced-code preservation cases, including PI output
 - bare and host-style shell prompts
 - multiline PI command cleanup
 - mixed command/output transcripts that should stay unchanged
-- ambiguous label-plus-command and transcript-like snippets that `auto` should leave alone
+- ambiguous label-plus-command, transcript-like, and mixed prose-command snippets that `auto` should leave alone
