@@ -16,5 +16,9 @@ fn clipboard_preview_and_print_are_rejected_as_ambiguous() {
     let output = run_waytrim_capture(&["prose", "--clipboard", "--preview", "--print"], "");
 
     assert!(!output.status.success());
-    assert!(output.stderr.contains("cannot combine --preview and --print with --clipboard"));
+    assert!(
+        output
+            .stderr
+            .contains("cannot combine --preview and --print with --clipboard")
+    );
 }

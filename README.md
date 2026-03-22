@@ -13,6 +13,7 @@ waytrim auto
 waytrim prose --preview
 waytrim prose --clipboard
 waytrim prose --clipboard --print
+waytrim prose --clipboard --preview
 ```
 
 The canonical interface is mode-centered. Clipboard actions use `waytrim <mode> --clipboard`, not `waytrim clipboard <mode>`.
@@ -24,16 +25,19 @@ The CLI reads from stdin and writes cleaned text to stdout by default. In clipbo
 ### `prose`
 - primary mode
 - repairs wrapped paragraphs and copy-induced spacing noise
-- preserves visible structure such as bullets, headings, blockquotes, and indented sections
+- preserves visible structure such as bullets, headings, blockquotes, fenced code blocks, and indented sections
+- repairs obvious wrapped blockquotes while leaving fenced code untouched
 
 ### `command`
 - bounded secondary mode
 - strips obvious prompts and repairs command presentation damage
+- handles bare prompts and common host-style shell prompts conservatively
 - leaves mixed command/output snippets unchanged unless the command shape is obvious
 
 ### `auto`
 - conservative convenience mode
 - chooses command cleanup when the input is clearly command-like
+- declines to merge short label-plus-command snippets such as `Install command:` followed by a command
 - otherwise prefers prose repair or minimal prose-safe cleanup
 
 ## Preview
@@ -46,12 +50,16 @@ In clipboard mode, `--preview` is explicitly non-mutating. It shows what would c
 
 Clipboard support is a manual adapter over the same repair core.
 
-Planned behavior:
-- `waytrim prose --clipboard` repairs current clipboard text and writes it back
-- `waytrim prose --clipboard --print` prints repaired text to stdout and also writes it back
+Behavior:
+- `waytrim prose --clipboard` repairs current clipboard text and writes it back when it changes
+- `waytrim prose --clipboard --print` prints repaired text to stdout and also writes it back when it changes
 - `waytrim prose --clipboard --preview` previews changes without mutating the clipboard
 - `clipboard unchanged` is a first-class success outcome when no effective change is needed
+- empty clipboard input returns a clear success message instead of crashing
 - `--clipboard --preview --print` is rejected as ambiguous
+
+Runtime dependency:
+- Wayland clipboard support uses `wl-paste` and `wl-copy`
 
 ## Development docs
 
@@ -68,3 +76,11 @@ cargo fmt --check
 ## Fixtures
 
 Fixtures live under `tests/fixtures/` and are organized by mode first, then source/type. Metadata files (`*.meta.txt`) capture notes plus lightweight `preserve` and `avoid` rules so heuristics stay aligned with the product boundary.
+
+Current corpus coverage includes:
+- AI-terminal wrapped prose
+- TUI status-update bullets
+- wrapped doc blockquotes
+- fenced-code negative cases
+- bare and host-style shell prompts
+- ambiguous label-plus-command snippets that `auto` should leave split

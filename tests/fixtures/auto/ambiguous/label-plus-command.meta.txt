@@ -1,0 +1,3 @@
+notes: short label followed by command should stay split
+preserve: label, command text
+avoid: prose-merge, transcript-parsing

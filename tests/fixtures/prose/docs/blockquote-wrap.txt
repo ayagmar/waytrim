@@ -1,0 +1,2 @@
+> This copied quote wrapped in a narrow pane and
+  should become one quoted line again.

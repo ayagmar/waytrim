@@ -29,12 +29,14 @@ printf 'This is a wrapped\nparagraph.\n' | cargo run -- prose
 
 ```bash
 printf '$ cargo test \\\n    --test cli_smoke\n' | cargo run -- command
+printf 'ayagmar@archbox:~/projects/waytrim$ cargo test \\\n  --test cli_smoke\n' | cargo run -- command
 ```
 
 ### Auto mode
 
 ```bash
 printf 'Value one  \n\n\nValue two   \n' | cargo run -- auto
+printf 'Install command:\napt-get install ripgrep\n' | cargo run -- auto
 ```
 
 ### Preview output
@@ -43,7 +45,7 @@ printf 'Value one  \n\n\nValue two   \n' | cargo run -- auto
 printf 'This is a wrapped\nparagraph.\n' | cargo run -- prose --preview
 ```
 
-### Planned clipboard adapter shape
+### Clipboard adapter shape
 
 ```bash
 cargo run -- prose --clipboard
@@ -57,6 +59,8 @@ Notes:
 - `--print` means print repaired text and also write it back
 - `--clipboard --preview --print` is invalid
 - `clipboard unchanged` should be reported clearly when nothing changes
+- empty clipboard input should report a clear success message
+- clipboard integration depends on `wl-paste` and `wl-copy`
 
 ## Test and format
 
@@ -70,6 +74,8 @@ cargo test
 ```text
 src/
   lib.rs        core repair logic
+  cli.rs        CLI config and clipboard flow
+  clipboard.rs  wl-paste / wl-copy adapter
   main.rs       CLI adapter
 
 tests/
@@ -89,3 +95,6 @@ docs/
 - Add negative fixtures when a change could overreach.
 - Keep platform-specific integration work outside the core library.
 - Keep clipboard behavior as a thin adapter over the same repair contracts.
+- Current prose boundaries explicitly cover wrapped blockquotes and fenced-code preservation.
+- Current command boundaries explicitly cover common host-style shell prompts.
+- Current auto boundaries explicitly avoid merging short label-plus-command snippets.

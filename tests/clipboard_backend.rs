@@ -1,9 +1,10 @@
 mod support;
 
 use std::cell::RefCell;
+use std::time::{Duration, Instant};
 
-use support::{temp_file_path, write_executable_script};
-use waytrim::clipboard::{ClipboardBackend, CommandSpec, ClipboardError, SystemClipboard};
+use support::temp_file_path;
+use waytrim::clipboard::{ClipboardBackend, ClipboardError, CommandSpec, SystemClipboard};
 
 struct MemoryClipboard {
     value: RefCell<String>,
@@ -44,7 +45,9 @@ fn system_backend_reports_missing_commands_clearly() {
         CommandSpec::new("waytrim-missing-wl-copy"),
     );
 
-    let error = clipboard.read_text().expect_err("expected missing command error");
+    let error = clipboard
+        .read_text()
+        .expect_err("expected missing command error");
 
     assert!(error.to_string().contains("command not found"));
     assert!(error.to_string().contains("waytrim-missing-wl-paste"));
@@ -52,34 +55,77 @@ fn system_backend_reports_missing_commands_clearly() {
 
 #[test]
 fn system_backend_reports_invalid_utf8_reads_clearly() {
-    let script = write_executable_script(
-        "clipboard-invalid-utf8",
-        "#!/bin/sh\nprintf '\\377'\n",
-    );
     let clipboard = SystemClipboard::with_commands(
-        CommandSpec::new(script.to_string_lossy()).with_arg("--"),
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg("printf '\\377'"),
         CommandSpec::new("waytrim-missing-wl-copy"),
     );
 
     let error = clipboard.read_text().expect_err("expected utf8 error");
 
-    assert!(error.to_string().contains("clipboard did not contain valid UTF-8 text"));
+    assert!(
+        error
+            .to_string()
+            .contains("clipboard did not contain valid UTF-8 text")
+    );
 }
 
 #[test]
 fn system_backend_writes_text_through_configured_command() {
     let output_path = temp_file_path("clipboard-write-output");
-    let script = write_executable_script(
-        "clipboard-write",
-        &format!("#!/bin/sh\ncat > '{}'\n", output_path.display()),
-    );
     let clipboard = SystemClipboard::with_commands(
         CommandSpec::new("waytrim-missing-wl-paste"),
-        CommandSpec::new(script.to_string_lossy()).with_arg("--"),
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg(format!("cat > '{}'", output_path.display())),
     );
 
-    clipboard.write_text("copied text\n").expect("write clipboard");
+    clipboard
+        .write_text("copied text\n")
+        .expect("write clipboard");
 
     let written = std::fs::read_to_string(output_path).expect("read written clipboard text");
     assert_eq!(written, "copied text\n");
+}
+
+#[test]
+fn system_backend_can_write_with_file_backed_stdin() {
+    let output_path = temp_file_path("clipboard-write-file-stdin-output");
+    let clipboard = SystemClipboard::with_commands(
+        CommandSpec::new("waytrim-missing-wl-paste"),
+        CommandSpec::new("sh").with_arg("-c").with_arg(format!(
+            "if [ -p /dev/stdin ]; then echo 'stdin must not be a pipe' >&2; exit 1; fi; cat > '{}'",
+            output_path.display()
+        )),
+    );
+
+    clipboard
+        .write_text("copied through file stdin\n")
+        .expect("write clipboard");
+
+    let written = std::fs::read_to_string(output_path).expect("read written clipboard text");
+    assert_eq!(written, "copied through file stdin\n");
+}
+
+#[test]
+fn system_backend_does_not_wait_for_long_lived_clipboard_process() {
+    let output_path = temp_file_path("clipboard-write-long-lived-output");
+    let clipboard = SystemClipboard::with_commands(
+        CommandSpec::new("waytrim-missing-wl-paste"),
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg(format!("cat > '{}'; sleep 2", output_path.display())),
+    );
+
+    let start = Instant::now();
+    clipboard
+        .write_text("copied without waiting\n")
+        .expect("write clipboard");
+
+    assert!(
+        start.elapsed() < Duration::from_secs(1),
+        "clipboard write waited too long: {:?}",
+        start.elapsed()
+    );
 }

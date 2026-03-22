@@ -1,0 +1,2 @@
+ayagmar@archbox:~/projects/waytrim$ cargo test \
+  --test cli_smoke

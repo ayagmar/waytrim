@@ -45,6 +45,8 @@ The CLI is the current canonical interface. It is intentionally thin:
 
 The preferred clipboard UX is mode-centered: `waytrim prose --clipboard`, not `waytrim clipboard prose`.
 
+Clipboard handling itself stays in a small backend adapter (`src/clipboard.rs`) that shells out to `wl-paste` and `wl-copy`. The CLI flow reuses the same `repair()` and `render_preview()` paths as stdin mode, and keeps clipboard status messaging separate from cleaned text output.
+
 ## Mode boundaries
 
 ### Prose

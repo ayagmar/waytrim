@@ -1,0 +1,2 @@
+Install command:
+apt-get install ripgrep

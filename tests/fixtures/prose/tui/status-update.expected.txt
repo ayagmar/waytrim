@@ -1,0 +1,5 @@
+Status update
+
+- Clipboard flow now reads the current clipboard text through the shared repair path.
+- Preview mode stays non-mutating and shows what would change.
+- Empty clipboard handling now reports a clear status instead of crashing.

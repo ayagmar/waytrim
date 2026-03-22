@@ -1,0 +1,3 @@
+notes: tui status update, wrapped bullets, clipboard-driven prose cleanup
+preserve: bullets, status updates
+avoid: markdown-prettify, transcript-parsing

@@ -19,3 +19,11 @@ fn command_leaves_mixed_command_output_snippets_unchanged() {
     assert!(meta.avoid.iter().any(|value| value == "transcript-parsing"));
     assert_eq!(output, fixture_output("command/negative/mixed-output"));
 }
+
+#[test]
+fn command_strips_common_host_prompts() {
+    let input = fixture_input("command/prompts/host-shell");
+    let output = run_waytrim(&["command"], &input);
+
+    assert_eq!(output, fixture_output("command/prompts/host-shell"));
+}

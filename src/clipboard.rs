@@ -1,6 +1,9 @@
 use std::fmt;
-use std::io::Write;
-use std::process::{Command, Stdio};
+use std::fs;
+use std::process::{self, Command};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::thread;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub trait ClipboardBackend {
     fn read_text(&self) -> Result<String, ClipboardError>;
@@ -99,44 +102,89 @@ impl ClipboardBackend for SystemClipboard {
     }
 
     fn write_text(&self, text: &str) -> Result<(), ClipboardError> {
-        let mut child = Command::new(&self.write_command.program)
-            .args(&self.write_command.args)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::null())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|error| match error.kind() {
-                std::io::ErrorKind::NotFound => ClipboardError::CommandNotFound {
-                    command: self.write_command.program.clone(),
-                },
-                _ => ClipboardError::CommandFailed {
-                    command: self.write_command.program.clone(),
-                    detail: error.to_string(),
-                },
+        let input_path =
+            write_clipboard_input(text).map_err(|error| ClipboardError::CommandFailed {
+                command: self.write_command.program.clone(),
+                detail: error.to_string(),
             })?;
+        let error_path = clipboard_error_path();
 
-        child
-            .stdin
-            .as_mut()
-            .expect("clipboard command stdin")
-            .write_all(text.as_bytes())
+        let output = Command::new("sh")
+            .arg("-c")
+            .arg(
+                "input=$1\nerr=$2\nshift 2\ncommand=$1\ncommand -v \"$command\" >/dev/null 2>&1 || exit 127\n\"$@\" < \"$input\" >/dev/null 2>\"$err\" &\n",
+            )
+            .arg("sh")
+            .arg(&input_path)
+            .arg(&error_path)
+            .arg(&self.write_command.program)
+            .args(&self.write_command.args)
+            .output()
             .map_err(|error| ClipboardError::CommandFailed {
                 command: self.write_command.program.clone(),
                 detail: error.to_string(),
             })?;
 
-        let output = child.wait_with_output().map_err(|error| ClipboardError::CommandFailed {
-            command: self.write_command.program.clone(),
-            detail: error.to_string(),
-        })?;
+        let _ = fs::remove_file(&input_path);
 
-        if output.status.success() {
-            return Ok(());
+        if !output.status.success() {
+            let _ = fs::remove_file(&error_path);
+
+            if output.status.code() == Some(127) {
+                return Err(ClipboardError::CommandNotFound {
+                    command: self.write_command.program.clone(),
+                });
+            }
+
+            return Err(ClipboardError::CommandFailed {
+                command: self.write_command.program.clone(),
+                detail: String::from_utf8_lossy(&output.stderr).trim().to_string(),
+            });
         }
 
-        Err(ClipboardError::CommandFailed {
-            command: self.write_command.program.clone(),
-            detail: String::from_utf8_lossy(&output.stderr).trim().to_string(),
-        })
+        for _ in 0..20 {
+            let detail = fs::read_to_string(&error_path).unwrap_or_default();
+            if !detail.trim().is_empty() {
+                let _ = fs::remove_file(&error_path);
+                return Err(ClipboardError::CommandFailed {
+                    command: self.write_command.program.clone(),
+                    detail: detail.trim().to_string(),
+                });
+            }
+
+            thread::sleep(Duration::from_millis(10));
+        }
+
+        let _ = fs::remove_file(&error_path);
+        Ok(())
     }
+}
+
+fn write_clipboard_input(text: &str) -> std::io::Result<std::path::PathBuf> {
+    let path = clipboard_input_path();
+    fs::write(&path, text)?;
+    Ok(path)
+}
+
+fn clipboard_input_path() -> std::path::PathBuf {
+    temp_path("clipboard-input")
+}
+
+fn clipboard_error_path() -> std::path::PathBuf {
+    temp_path("clipboard-error")
+}
+
+fn temp_path(kind: &str) -> std::path::PathBuf {
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+
+    let unique = COUNTER.fetch_add(1, Ordering::Relaxed);
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time before unix epoch")
+        .as_nanos();
+
+    std::env::temp_dir().join(format!(
+        "waytrim-{kind}-{}-{timestamp}-{unique}",
+        process::id()
+    ))
 }

@@ -1,0 +1,3 @@
+notes: host shell prompt with user, host, and cwd
+preserve: command text
+avoid: transcript-parsing, shell-interpretation

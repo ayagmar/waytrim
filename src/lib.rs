@@ -72,6 +72,10 @@ fn repair_auto(input: &str) -> String {
         return repair_command(input);
     }
 
+    if looks_like_label_plus_command(input) {
+        return minimal_prose_safe_cleanup(input);
+    }
+
     if looks_like_prose(input) {
         return repair_prose(input);
     }
@@ -82,6 +86,9 @@ fn repair_auto(input: &str) -> String {
 fn repair_prose(input: &str) -> String {
     let mut output_lines = Vec::new();
     let mut paragraph = Vec::new();
+    let mut list_item: Option<String> = None;
+    let mut active_quote: Option<String> = None;
+    let mut in_fenced_code = false;
 
     let flush_paragraph = |paragraph: &mut Vec<String>, output_lines: &mut Vec<String>| {
         if paragraph.is_empty() {
@@ -98,17 +105,85 @@ fn repair_prose(input: &str) -> String {
         paragraph.clear();
     };
 
+    let flush_list_item = |list_item: &mut Option<String>, output_lines: &mut Vec<String>| {
+        let Some(item) = list_item.take() else {
+            return;
+        };
+
+        output_lines.push(item);
+    };
+
+    let flush_quote = |active_quote: &mut Option<String>, output_lines: &mut Vec<String>| {
+        let Some(quote) = active_quote.take() else {
+            return;
+        };
+
+        output_lines.push(quote);
+    };
+
     for raw_line in input.lines() {
         let line = raw_line.trim_end();
+        let trimmed = line.trim();
 
-        if line.trim().is_empty() {
+        if trimmed.starts_with("```") {
             flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_list_item(&mut list_item, &mut output_lines);
+            flush_quote(&mut active_quote, &mut output_lines);
+            in_fenced_code = !in_fenced_code;
+            output_lines.push(line.to_string());
+            continue;
+        }
+
+        if in_fenced_code {
+            output_lines.push(line.to_string());
+            continue;
+        }
+
+        if trimmed.is_empty() {
+            flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_list_item(&mut list_item, &mut output_lines);
+            flush_quote(&mut active_quote, &mut output_lines);
 
             if output_lines.last().is_none_or(|last| !last.is_empty()) {
                 output_lines.push(String::new());
             }
 
             continue;
+        }
+
+        if is_list_item_line(trimmed) {
+            flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_list_item(&mut list_item, &mut output_lines);
+            flush_quote(&mut active_quote, &mut output_lines);
+            list_item = Some(normalize_inline_spacing(trimmed));
+            continue;
+        }
+
+        if let Some(item) = list_item.as_mut() {
+            if is_list_continuation_line(line) {
+                item.push(' ');
+                item.push_str(&normalize_inline_spacing(trimmed));
+                continue;
+            }
+
+            flush_list_item(&mut list_item, &mut output_lines);
+        }
+
+        if let Some(quote) = blockquote_prefix(trimmed) {
+            flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_quote(&mut active_quote, &mut output_lines);
+            active_quote = Some(format!("> {}", normalize_inline_spacing(quote)));
+            continue;
+        }
+
+        if let Some(quote) = active_quote.as_mut() {
+            if is_blockquote_continuation_line(line) {
+                quote.push(' ');
+                quote.push_str(&normalize_inline_spacing(trimmed));
+                continue;
+            }
+
+            flush_quote(&mut active_quote, &mut output_lines);
         }
 
         if is_protected_line(line) {
@@ -121,6 +196,8 @@ fn repair_prose(input: &str) -> String {
     }
 
     flush_paragraph(&mut paragraph, &mut output_lines);
+    flush_list_item(&mut list_item, &mut output_lines);
+    flush_quote(&mut active_quote, &mut output_lines);
 
     while output_lines.last().is_some_and(|line| line.is_empty()) {
         output_lines.pop();
@@ -236,6 +313,32 @@ fn minimal_prose_safe_cleanup(input: &str) -> String {
     finish_with_newline(output.join("\n"))
 }
 
+fn looks_like_label_plus_command(input: &str) -> bool {
+    let lines: Vec<_> = input
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect();
+
+    if lines.len() != 2 {
+        return false;
+    }
+
+    lines[0].ends_with(':') && looks_like_command_line_after_label(lines[1])
+}
+
+fn looks_like_command_line_after_label(line: &str) -> bool {
+    let mut parts = line.split_whitespace();
+    let Some(program) = parts.next() else {
+        return false;
+    };
+
+    program
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.' | '/'))
+        && parts.next().is_some()
+}
+
 fn looks_like_prose(input: &str) -> bool {
     let lines: Vec<_> = input
         .lines()
@@ -327,7 +430,25 @@ fn strip_prompt(line: &str) -> Option<&str> {
         }
     }
 
+    for marker in ["$ ", "# ", "% "] {
+        let Some((prefix, command)) = trimmed.rsplit_once(marker) else {
+            continue;
+        };
+
+        if prefix.contains('@') || prefix.contains(':') || prefix.contains('~') {
+            return Some(command.trim_start());
+        }
+    }
+
     None
+}
+
+fn blockquote_prefix(trimmed: &str) -> Option<&str> {
+    Some(trimmed.strip_prefix('>')?.trim_start())
+}
+
+fn is_blockquote_continuation_line(line: &str) -> bool {
+    line.starts_with(char::is_whitespace) && !line.trim().is_empty()
 }
 
 fn is_protected_line(line: &str) -> bool {
@@ -346,6 +467,15 @@ fn is_bullet_line(trimmed: &str) -> bool {
     ["- ", "* ", "+ "]
         .iter()
         .any(|marker| trimmed.starts_with(marker))
+}
+
+fn is_list_item_line(trimmed: &str) -> bool {
+    is_bullet_line(trimmed) || is_numbered_line(trimmed)
+}
+
+fn is_list_continuation_line(line: &str) -> bool {
+    let trimmed = line.trim();
+    !trimmed.is_empty() && line.starts_with(char::is_whitespace) && !is_protected_line(line)
 }
 
 fn is_numbered_line(trimmed: &str) -> bool {

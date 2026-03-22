@@ -17,3 +17,11 @@ fn auto_falls_back_to_minimal_prose_safe_cleanup_when_ambiguous() {
 
     assert_eq!(output, fixture_output("auto/ambiguous/minimal-cleanup"));
 }
+
+#[test]
+fn auto_declines_to_merge_label_plus_command_snippets() {
+    let input = fixture_input("auto/ambiguous/label-plus-command");
+    let output = run_waytrim(&["auto"], &input);
+
+    assert_eq!(output, fixture_output("auto/ambiguous/label-plus-command"));
+}

@@ -1,0 +1,3 @@
+notes: fenced code block should be preserved verbatim
+preserve: code blocks
+avoid: markdown-prettify, code-reflow

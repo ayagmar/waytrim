@@ -1,0 +1,6 @@
+Here is the snippet:
+
+```
+let first = 1;
+let second = first + 1;
+```

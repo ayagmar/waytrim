@@ -1,0 +1,3 @@
+notes: docs prose, wrapped blockquote from narrow pane
+preserve: blockquotes
+avoid: markdown-prettify, transcript-parsing

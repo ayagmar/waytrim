@@ -1,5 +1,5 @@
-use waytrim::cli::CliConfig;
 use waytrim::Mode;
+use waytrim::cli::CliConfig;
 
 #[test]
 fn parses_mode_centered_clipboard_flags() {

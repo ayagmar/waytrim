@@ -2,7 +2,8 @@ use std::env;
 use std::io::{self, Read};
 use std::process::ExitCode;
 
-use waytrim::cli::CliConfig;
+use waytrim::cli::{CliConfig, run_clipboard_flow};
+use waytrim::clipboard::SystemClipboard;
 use waytrim::{render_preview, repair};
 
 fn main() -> ExitCode {
@@ -18,7 +19,10 @@ fn main() -> ExitCode {
 fn run() -> Result<(), String> {
     let args: Vec<String> = env::args().skip(1).collect();
 
-    if args.iter().any(|arg| matches!(arg.as_str(), "-h" | "--help")) {
+    if args
+        .iter()
+        .any(|arg| matches!(arg.as_str(), "-h" | "--help"))
+    {
         print_help();
         return Ok(());
     }
@@ -26,7 +30,10 @@ fn run() -> Result<(), String> {
     let config = CliConfig::parse(args.iter().map(String::as_str))?;
 
     if config.clipboard {
-        return Err(String::from("clipboard mode not implemented yet"));
+        let output = run_clipboard_flow(&config, &SystemClipboard::new())?;
+        print!("{}", output.stdout);
+        eprint!("{}", output.stderr);
+        return Ok(());
     }
 
     let mut input = String::new();
