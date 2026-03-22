@@ -1,5 +1,24 @@
 use crate::clipboard::ClipboardBackend;
-use crate::{Mode, render_explain, render_preview, repair};
+use crate::{Mode, RepairPolicy, render_explain, render_preview, repair_with_policy};
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct CliArgs {
+    pub mode: Option<Mode>,
+    pub clipboard: Option<bool>,
+    pub preview: Option<bool>,
+    pub explain: Option<bool>,
+    pub print: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConfigDefaults {
+    pub mode: Mode,
+    pub clipboard: bool,
+    pub preview: bool,
+    pub explain: bool,
+    pub print: bool,
+    pub policy: RepairPolicy,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CliConfig {
@@ -8,6 +27,7 @@ pub struct CliConfig {
     pub preview: bool,
     pub explain: bool,
     pub print: bool,
+    pub policy: RepairPolicy,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,6 +46,19 @@ pub struct ClipboardFlowOutput {
     pub status: ClipboardFlowStatus,
 }
 
+impl Default for ConfigDefaults {
+    fn default() -> Self {
+        Self {
+            mode: Mode::Prose,
+            clipboard: false,
+            preview: false,
+            explain: false,
+            print: false,
+            policy: RepairPolicy::default(),
+        }
+    }
+}
+
 impl Default for CliConfig {
     fn default() -> Self {
         Self {
@@ -34,7 +67,37 @@ impl Default for CliConfig {
             preview: false,
             explain: false,
             print: false,
+            policy: RepairPolicy::default(),
         }
+    }
+}
+
+impl CliArgs {
+    pub fn parse<I, S>(args: I) -> Result<Self, String>
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        let mut parsed = Self::default();
+
+        for arg in args {
+            match arg.as_ref() {
+                "prose" => parsed.mode = Some(Mode::Prose),
+                "command" => parsed.mode = Some(Mode::Command),
+                "auto" => parsed.mode = Some(Mode::Auto),
+                "--clipboard" => parsed.clipboard = Some(true),
+                "--no-clipboard" => parsed.clipboard = Some(false),
+                "--preview" => parsed.preview = Some(true),
+                "--no-preview" => parsed.preview = Some(false),
+                "--explain" => parsed.explain = Some(true),
+                "--no-explain" => parsed.explain = Some(false),
+                "--print" => parsed.print = Some(true),
+                "--no-print" => parsed.print = Some(false),
+                other => return Err(format!("unknown argument: {other}")),
+            }
+        }
+
+        Ok(parsed)
     }
 }
 
@@ -44,38 +107,40 @@ impl CliConfig {
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        let mut config = Self::default();
+        Self::resolve(CliArgs::parse(args)?, ConfigDefaults::default())
+    }
 
-        for arg in args {
-            match arg.as_ref() {
-                "prose" => config.mode = Mode::Prose,
-                "command" => config.mode = Mode::Command,
-                "auto" => config.mode = Mode::Auto,
-                "--clipboard" => config.clipboard = true,
-                "--preview" => config.preview = true,
-                "--explain" => config.explain = true,
-                "--print" => config.print = true,
-                other => return Err(format!("unknown argument: {other}")),
-            }
-        }
+    pub fn resolve(args: CliArgs, defaults: ConfigDefaults) -> Result<Self, String> {
+        let config = Self {
+            mode: args.mode.unwrap_or(defaults.mode),
+            clipboard: args.clipboard.unwrap_or(defaults.clipboard),
+            preview: args.preview.unwrap_or(defaults.preview),
+            explain: args.explain.unwrap_or(defaults.explain),
+            print: args.print.unwrap_or(defaults.print),
+            policy: defaults.policy,
+        };
 
-        if config.preview && config.explain {
+        config.validate()
+    }
+
+    fn validate(self) -> Result<Self, String> {
+        if self.preview && self.explain {
             return Err(String::from("cannot combine --preview and --explain"));
         }
 
-        if config.clipboard && config.preview && config.print {
+        if self.clipboard && self.preview && self.print {
             return Err(String::from(
                 "cannot combine --preview and --print with --clipboard",
             ));
         }
 
-        if config.clipboard && config.explain && config.print {
+        if self.clipboard && self.explain && self.print {
             return Err(String::from(
                 "cannot combine --explain and --print with --clipboard",
             ));
         }
 
-        Ok(config)
+        Ok(self)
     }
 }
 
@@ -95,7 +160,7 @@ pub fn run_clipboard_flow<B: ClipboardBackend>(
         });
     }
 
-    let result = repair(&input, config.mode);
+    let result = repair_with_policy(&input, config.mode, &config.policy);
 
     if config.preview {
         return Ok(ClipboardFlowOutput {

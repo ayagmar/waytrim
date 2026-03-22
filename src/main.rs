@@ -67,4 +67,8 @@ fn print_help() {
     println!("waytrim prose --clipboard --print");
     println!("waytrim prose --clipboard --preview");
     println!("waytrim prose --clipboard --explain");
+    println!("waytrim --no-clipboard");
+    println!("waytrim --no-preview");
+    println!("waytrim --no-explain");
+    println!("waytrim --no-print");
 }

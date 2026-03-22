@@ -47,3 +47,12 @@ fn clipboard_explain_and_print_are_rejected_as_ambiguous() {
             .contains("cannot combine --explain and --print with --clipboard")
     );
 }
+
+#[test]
+fn help_shows_negated_config_override_flags() {
+    let output = run_waytrim_capture(&["--help"], "");
+
+    assert!(output.status.success());
+    assert!(output.stdout.contains("--no-preview"));
+    assert!(output.stdout.contains("--no-explain"));
+}

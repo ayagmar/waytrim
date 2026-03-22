@@ -1,5 +1,5 @@
-use waytrim::Mode;
-use waytrim::cli::CliConfig;
+use waytrim::{AutoPolicy, Mode, RepairPolicy};
+use waytrim::cli::{CliArgs, CliConfig, ConfigDefaults};
 
 #[test]
 fn parses_mode_centered_clipboard_flags() {
@@ -48,4 +48,47 @@ fn parses_explain_flag() {
 
     assert_eq!(config.mode, Mode::Command);
     assert!(config.explain);
+}
+
+#[test]
+fn cli_args_track_explicit_boolean_overrides() {
+    let args = CliArgs::parse(["--preview", "--no-print"]).expect("parse args");
+
+    assert_eq!(args.preview, Some(true));
+    assert_eq!(args.print, Some(false));
+}
+
+#[test]
+fn resolved_cli_config_prefers_explicit_cli_values_over_file_defaults() {
+    let args = CliArgs::parse(["command", "--no-preview"]).expect("parse args");
+    let defaults = ConfigDefaults {
+        mode: Mode::Prose,
+        clipboard: false,
+        preview: true,
+        explain: false,
+        print: false,
+        policy: RepairPolicy {
+            auto_policy: AutoPolicy::ProsePreferred,
+            ..RepairPolicy::default()
+        },
+    };
+
+    let config = CliConfig::resolve(args, defaults).expect("resolve config");
+
+    assert_eq!(config.mode, Mode::Command);
+    assert!(!config.preview);
+    assert_eq!(config.policy.auto_policy, AutoPolicy::ProsePreferred);
+}
+
+#[test]
+fn rejects_preview_and_explain_after_merge() {
+    let args = CliArgs::parse(["--preview"]).expect("parse args");
+    let defaults = ConfigDefaults {
+        explain: true,
+        ..ConfigDefaults::default()
+    };
+
+    let error = CliConfig::resolve(args, defaults).expect_err("expected resolve error");
+
+    assert!(error.contains("cannot combine --preview and --explain"));
 }
