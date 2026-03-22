@@ -8,14 +8,30 @@ pub enum Mode {
     Auto,
 }
 
+impl Mode {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Prose => "prose",
+            Self::Command => "command",
+            Self::Auto => "auto",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExplainStep {
+    pub message: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RepairResult {
     pub output: String,
     pub changed: bool,
+    pub explain: Vec<ExplainStep>,
 }
 
 pub fn repair(input: &str, mode: Mode) -> RepairResult {
-    let output = match mode {
+    let (output, explain) = match mode {
         Mode::Prose => repair_prose(input),
         Mode::Command => repair_command(input),
         Mode::Auto => repair_auto(input),
@@ -24,6 +40,7 @@ pub fn repair(input: &str, mode: Mode) -> RepairResult {
     RepairResult {
         changed: output != input,
         output,
+        explain,
     }
 }
 
@@ -67,74 +84,77 @@ pub fn render_preview(input: &str, result: &RepairResult) -> String {
     preview
 }
 
-fn repair_auto(input: &str) -> String {
+pub fn render_explain(mode: Mode, result: &RepairResult) -> String {
+    let mut output = format!(
+        "mode: {}\nchanged: {}\nrepairs:\n",
+        mode.as_str(),
+        if result.changed { "yes" } else { "no" }
+    );
+
+    if result.explain.is_empty() {
+        output.push_str(if result.changed {
+            "- repaired text\n"
+        } else {
+            "- no repair needed\n"
+        });
+    } else {
+        for step in &result.explain {
+            output.push_str("- ");
+            output.push_str(&step.message);
+            output.push('\n');
+        }
+    }
+
+    output.push_str("--- output\n");
+    output.push_str(&result.output);
+    output
+}
+
+fn repair_auto(input: &str) -> (String, Vec<ExplainStep>) {
     if looks_like_command(input) {
         return repair_command(input);
     }
 
     if looks_like_command_transcript(input) {
-        return minimal_prose_safe_cleanup(input);
+        return (minimal_prose_safe_cleanup(input), Vec::new());
     }
 
     if looks_like_label_plus_command(input) {
-        return minimal_prose_safe_cleanup(input);
+        return (minimal_prose_safe_cleanup(input), Vec::new());
     }
 
     if looks_like_prose(input) {
         return repair_prose(input);
     }
 
-    minimal_prose_safe_cleanup(input)
+    (minimal_prose_safe_cleanup(input), Vec::new())
 }
 
-fn repair_prose(input: &str) -> String {
+fn repair_prose(input: &str) -> (String, Vec<ExplainStep>) {
     let mut output_lines = Vec::new();
     let mut paragraph = Vec::new();
+    let mut paragraph_start_line = None;
     let mut list_item: Option<String> = None;
     let mut active_quote: Option<String> = None;
     let mut in_fenced_code = false;
     let mut in_command_block = false;
     let mut in_aligned_block = false;
+    let mut explain = Vec::new();
 
-    let flush_paragraph = |paragraph: &mut Vec<String>, output_lines: &mut Vec<String>| {
-        if paragraph.is_empty() {
-            return;
-        }
+    let mut lines = input.lines().enumerate().peekable();
 
-        let joined = paragraph
-            .iter()
-            .map(|line| normalize_inline_spacing(line.trim()))
-            .collect::<Vec<_>>()
-            .join(" ");
-
-        output_lines.push(joined);
-        paragraph.clear();
-    };
-
-    let flush_list_item = |list_item: &mut Option<String>, output_lines: &mut Vec<String>| {
-        let Some(item) = list_item.take() else {
-            return;
-        };
-
-        output_lines.push(item);
-    };
-
-    let flush_quote = |active_quote: &mut Option<String>, output_lines: &mut Vec<String>| {
-        let Some(quote) = active_quote.take() else {
-            return;
-        };
-
-        output_lines.push(quote);
-    };
-
-    let mut lines = input.lines().peekable();
-
-    while let Some(raw_line) = lines.next() {
+    while let Some((index, raw_line)) = lines.next() {
+        let line_number = index + 1;
         let line = raw_line.trim_end();
         let trimmed = line.trim();
 
         if trimmed.starts_with("```") {
-            flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_paragraph(
+                &mut paragraph,
+                &mut paragraph_start_line,
+                &mut output_lines,
+                &mut explain,
+            );
             flush_list_item(&mut list_item, &mut output_lines);
             flush_quote(&mut active_quote, &mut output_lines);
             in_fenced_code = !in_fenced_code;
@@ -148,7 +168,12 @@ fn repair_prose(input: &str) -> String {
         }
 
         if trimmed.is_empty() {
-            flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_paragraph(
+                &mut paragraph,
+                &mut paragraph_start_line,
+                &mut output_lines,
+                &mut explain,
+            );
             flush_list_item(&mut list_item, &mut output_lines);
             flush_quote(&mut active_quote, &mut output_lines);
             in_command_block = false;
@@ -172,9 +197,14 @@ fn repair_prose(input: &str) -> String {
         if looks_like_aligned_columns_line(line)
             && lines
                 .peek()
-                .is_some_and(|next| looks_like_aligned_columns_line(next.trim_end()))
+                .is_some_and(|(_, next)| looks_like_aligned_columns_line(next.trim_end()))
         {
-            flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_paragraph(
+                &mut paragraph,
+                &mut paragraph_start_line,
+                &mut output_lines,
+                &mut explain,
+            );
             flush_list_item(&mut list_item, &mut output_lines);
             flush_quote(&mut active_quote, &mut output_lines);
             in_command_block = false;
@@ -184,7 +214,12 @@ fn repair_prose(input: &str) -> String {
         }
 
         if !is_list_item_line(trimmed) && looks_like_shell_line(trimmed) {
-            flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_paragraph(
+                &mut paragraph,
+                &mut paragraph_start_line,
+                &mut output_lines,
+                &mut explain,
+            );
             flush_list_item(&mut list_item, &mut output_lines);
             flush_quote(&mut active_quote, &mut output_lines);
             in_command_block = true;
@@ -202,7 +237,12 @@ fn repair_prose(input: &str) -> String {
         }
 
         if is_list_item_line(trimmed) {
-            flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_paragraph(
+                &mut paragraph,
+                &mut paragraph_start_line,
+                &mut output_lines,
+                &mut explain,
+            );
             flush_list_item(&mut list_item, &mut output_lines);
             flush_quote(&mut active_quote, &mut output_lines);
             list_item = Some(normalize_inline_spacing(trimmed));
@@ -220,7 +260,12 @@ fn repair_prose(input: &str) -> String {
         }
 
         if let Some(quote) = blockquote_prefix(trimmed) {
-            flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_paragraph(
+                &mut paragraph,
+                &mut paragraph_start_line,
+                &mut output_lines,
+                &mut explain,
+            );
             flush_quote(&mut active_quote, &mut output_lines);
             active_quote = Some(format!("> {}", normalize_inline_spacing(quote)));
             continue;
@@ -237,15 +282,28 @@ fn repair_prose(input: &str) -> String {
         }
 
         if is_protected_line(line) {
-            flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_paragraph(
+                &mut paragraph,
+                &mut paragraph_start_line,
+                &mut output_lines,
+                &mut explain,
+            );
             output_lines.push(line.to_string());
             continue;
         }
 
+        if paragraph_start_line.is_none() {
+            paragraph_start_line = Some(line_number);
+        }
         paragraph.push(line.to_string());
     }
 
-    flush_paragraph(&mut paragraph, &mut output_lines);
+    flush_paragraph(
+        &mut paragraph,
+        &mut paragraph_start_line,
+        &mut output_lines,
+        &mut explain,
+    );
     flush_list_item(&mut list_item, &mut output_lines);
     flush_quote(&mut active_quote, &mut output_lines);
 
@@ -253,10 +311,56 @@ fn repair_prose(input: &str) -> String {
         output_lines.pop();
     }
 
-    finish_with_newline(output_lines.join("\n"))
+    (finish_with_newline(output_lines.join("\n")), explain)
 }
 
-fn repair_command(input: &str) -> String {
+fn flush_paragraph(
+    paragraph: &mut Vec<String>,
+    paragraph_start_line: &mut Option<usize>,
+    output_lines: &mut Vec<String>,
+    explain: &mut Vec<ExplainStep>,
+) {
+    if paragraph.is_empty() {
+        *paragraph_start_line = None;
+        return;
+    }
+
+    let joined = paragraph
+        .iter()
+        .map(|line| normalize_inline_spacing(line.trim()))
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    if paragraph.len() > 1 {
+        let start = paragraph_start_line.unwrap_or(1);
+        let end = start + paragraph.len() - 1;
+        explain.push(ExplainStep {
+            message: format!("joined wrapped paragraph lines {start}-{end}"),
+        });
+    }
+
+    output_lines.push(joined);
+    paragraph.clear();
+    *paragraph_start_line = None;
+}
+
+fn flush_list_item(list_item: &mut Option<String>, output_lines: &mut Vec<String>) {
+    let Some(item) = list_item.take() else {
+        return;
+    };
+
+    output_lines.push(item);
+}
+
+fn flush_quote(active_quote: &mut Option<String>, output_lines: &mut Vec<String>) {
+    let Some(quote) = active_quote.take() else {
+        return;
+    };
+
+    output_lines.push(quote);
+}
+
+fn repair_command(input: &str) -> (String, Vec<ExplainStep>) {
     let mut lines = Vec::new();
     let mut saw_prompt = false;
 
@@ -287,11 +391,11 @@ fn repair_command(input: &str) -> String {
             continue;
         }
 
-        return finish_with_newline(input.trim_end().to_string());
+        return (finish_with_newline(input.trim_end().to_string()), Vec::new());
     }
 
     if !saw_prompt && !looks_like_command(input) {
-        return finish_with_newline(input.trim_end().to_string());
+        return (finish_with_newline(input.trim_end().to_string()), Vec::new());
     }
 
     let mut joined = Vec::new();
@@ -334,7 +438,7 @@ fn repair_command(input: &str) -> String {
         joined.pop();
     }
 
-    finish_with_newline(joined.join("\n"))
+    (finish_with_newline(joined.join("\n")), Vec::new())
 }
 
 fn minimal_prose_safe_cleanup(input: &str) -> String {

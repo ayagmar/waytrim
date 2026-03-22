@@ -6,6 +6,7 @@ pub struct CliConfig {
     pub mode: Mode,
     pub clipboard: bool,
     pub preview: bool,
+    pub explain: bool,
     pub print: bool,
 }
 
@@ -30,6 +31,7 @@ impl Default for CliConfig {
             mode: Mode::Prose,
             clipboard: false,
             preview: false,
+            explain: false,
             print: false,
         }
     }
@@ -50,9 +52,14 @@ impl CliConfig {
                 "auto" => config.mode = Mode::Auto,
                 "--clipboard" => config.clipboard = true,
                 "--preview" => config.preview = true,
+                "--explain" => config.explain = true,
                 "--print" => config.print = true,
                 other => return Err(format!("unknown argument: {other}")),
             }
+        }
+
+        if config.preview && config.explain {
+            return Err(String::from("cannot combine --preview and --explain"));
         }
 
         if config.clipboard && config.preview && config.print {

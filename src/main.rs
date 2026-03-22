@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use waytrim::cli::{CliConfig, run_clipboard_flow};
 use waytrim::clipboard::SystemClipboard;
-use waytrim::{render_preview, repair};
+use waytrim::{render_explain, render_preview, repair};
 
 fn main() -> ExitCode {
     match run() {
@@ -45,6 +45,11 @@ fn run() -> Result<(), String> {
 
     if config.preview {
         print!("{}", render_preview(&input, &result));
+        return Ok(());
+    }
+
+    if config.explain {
+        print!("{}", render_explain(config.mode, &result));
         return Ok(());
     }
 
