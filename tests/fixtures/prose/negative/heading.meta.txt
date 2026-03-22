@@ -1,0 +1,3 @@
+notes: markdown heading should remain unchanged
+preserve: headings
+avoid: rewrite, heading-flattening

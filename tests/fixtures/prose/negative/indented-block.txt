@@ -1,0 +1,6 @@
+Review this carefully:
+
+    cargo test --test clipboard_flow
+    cargo test --test preview_mode
+
+Do not rewrite the indented block.

@@ -145,3 +145,27 @@ fn prose_leaves_already_clean_paragraph_fixture_unchanged() {
     assert!(meta.avoid.iter().any(|value| value == "rewrite"));
     assert_eq!(output, fixture_output("prose/negative/already-clean"));
 }
+
+#[test]
+fn prose_preserves_heading_fixture() {
+    let input = fixture_input("prose/negative/heading");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/negative/heading");
+
+    assert!(meta.preserve.iter().any(|value| value == "headings"));
+    assert_eq!(output, fixture_output("prose/negative/heading"));
+}
+
+#[test]
+fn prose_preserves_indented_block_fixture() {
+    let input = fixture_input("prose/negative/indented-block");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/negative/indented-block");
+
+    assert!(
+        meta.preserve
+            .iter()
+            .any(|value| value == "indented sections")
+    );
+    assert_eq!(output, fixture_output("prose/negative/indented-block"));
+}

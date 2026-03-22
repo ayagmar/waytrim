@@ -68,3 +68,23 @@ fn preview_reports_no_changes_for_already_clean_command_fixture() {
     assert!(output.contains("+++ after"));
     assert!(output.contains("(no changes)"));
 }
+
+#[test]
+fn preview_reports_no_changes_for_heading_fixture() {
+    let input = fixture_input("prose/negative/heading");
+    let output = run_waytrim(&["prose", "--preview"], &input);
+
+    assert!(output.contains("--- before"));
+    assert!(output.contains("+++ after"));
+    assert!(output.contains("(no changes)"));
+}
+
+#[test]
+fn preview_reports_no_changes_for_indented_block_fixture() {
+    let input = fixture_input("prose/negative/indented-block");
+    let output = run_waytrim(&["prose", "--preview"], &input);
+
+    assert!(output.contains("--- before"));
+    assert!(output.contains("+++ after"));
+    assert!(output.contains("(no changes)"));
+}

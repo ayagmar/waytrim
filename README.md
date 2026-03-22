@@ -88,10 +88,11 @@ Current corpus coverage includes:
 - mixed doc and PI prose with preserved standalone command blocks
 - alignment-sensitive / table-ish text that prose should preserve
 - already-clean prose that should remain unchanged
+- heading and indented-section no-op cases that prose should preserve
 - fenced-code preservation cases, including PI output
 - bare and host-style shell prompts
 - already-clean shell commands that should remain unchanged
 - multiline PI command cleanup
 - mixed command/output transcripts that should stay unchanged
 - ambiguous label-plus-command, transcript-like, mixed prose-command, and aligned-columns snippets that `auto` should leave alone
-- unchanged preview and clipboard no-op cases for safe inputs, including command-mode clipboard/transcript paths
+- unchanged preview and clipboard no-op cases for safe inputs, including command-mode clipboard/transcript paths and heading/indented prose fixtures

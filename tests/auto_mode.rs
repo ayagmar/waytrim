@@ -77,3 +77,19 @@ fn auto_leaves_already_clean_command_fixture_unchanged() {
         fixture_output("command/negative/already-clean-command")
     );
 }
+
+#[test]
+fn auto_leaves_heading_fixture_unchanged() {
+    let input = fixture_input("prose/negative/heading");
+    let output = run_waytrim(&["auto"], &input);
+
+    assert_eq!(output, fixture_output("prose/negative/heading"));
+}
+
+#[test]
+fn auto_leaves_indented_block_fixture_unchanged() {
+    let input = fixture_input("prose/negative/indented-block");
+    let output = run_waytrim(&["auto"], &input);
+
+    assert_eq!(output, fixture_output("prose/negative/indented-block"));
+}

@@ -292,3 +292,37 @@ fn clipboard_flow_command_mode_preserves_transcript_as_unchanged() {
     assert_eq!(output.status, ClipboardFlowStatus::Unchanged);
     assert!(clipboard.writes().is_empty());
 }
+
+#[test]
+fn clipboard_flow_reports_unchanged_for_heading_fixture() {
+    let input = fixture_input("prose/negative/heading");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = CliConfig {
+        mode: Mode::Prose,
+        clipboard: true,
+        preview: false,
+        print: false,
+    };
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Unchanged);
+    assert!(clipboard.writes().is_empty());
+}
+
+#[test]
+fn clipboard_flow_reports_unchanged_for_indented_block_fixture() {
+    let input = fixture_input("prose/negative/indented-block");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = CliConfig {
+        mode: Mode::Prose,
+        clipboard: true,
+        preview: false,
+        print: false,
+    };
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Unchanged);
+    assert!(clipboard.writes().is_empty());
+}

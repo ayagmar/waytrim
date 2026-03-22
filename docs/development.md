@@ -95,7 +95,7 @@ docs/
 - Add negative fixtures when a change could overreach.
 - Keep platform-specific integration work outside the core library.
 - Keep clipboard behavior as a thin adapter over the same repair contracts.
-- Current prose boundaries explicitly cover wrapped PI/TUI paragraphs, wrapped bullet and numbered-list continuations, wrapped blockquotes, inline-code bullets, fenced-code preservation, alignment-sensitive / table-ish text, already-clean no-op prose, and obvious standalone command blocks inside mixed prose snippets.
+- Current prose boundaries explicitly cover wrapped PI/TUI paragraphs, wrapped bullet and numbered-list continuations, wrapped blockquotes, inline-code bullets, fenced-code preservation, alignment-sensitive / table-ish text, already-clean no-op prose, heading and indented-section no-op cases, and obvious standalone command blocks inside mixed prose snippets.
 - Current command boundaries explicitly cover common host-style shell prompts, already-clean shell command no-op cases, multiline PI command cleanup, and transcript refusal.
-- Current auto boundaries explicitly avoid merging short label-plus-command snippets, transcript-like command/output captures, mixed prose-plus-command snippets, and alignment-sensitive column text, while leaving already-clean command-like input untouched.
-- Current preview and clipboard boundaries explicitly cover unchanged no-op outcomes in addition to changed-text paths, including command-mode clipboard/transcript cases.
+- Current auto boundaries explicitly avoid merging short label-plus-command snippets, transcript-like command/output captures, mixed prose-plus-command snippets, and alignment-sensitive column text, while leaving already-clean command-like input, headings, and indented-section fixtures untouched.
+- Current preview and clipboard boundaries explicitly cover unchanged no-op outcomes in addition to changed-text paths, including command-mode clipboard/transcript cases and heading/indented prose fixtures.

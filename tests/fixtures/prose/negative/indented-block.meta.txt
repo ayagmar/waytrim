@@ -1,0 +1,3 @@
+notes: indented command-like block inside prose should remain unchanged
+preserve: indented sections, command blocks
+avoid: paragraph-merge, indentation-loss
