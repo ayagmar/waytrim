@@ -93,3 +93,11 @@ fn auto_leaves_indented_block_fixture_unchanged() {
 
     assert_eq!(output, fixture_output("prose/negative/indented-block"));
 }
+
+#[test]
+fn auto_keeps_prose_preferred_fixture_unchanged_when_conservative() {
+    let input = fixture_input("auto/ambiguous/prose-preferred-wrap");
+    let output = run_waytrim(&["auto"], &input);
+
+    assert_eq!(output, fixture_output("auto/ambiguous/prose-preferred-wrap"));
+}

@@ -1,0 +1,3 @@
+notes: copied docs options table with terminal-style alignment
+preserve: aligned columns, docs layout
+avoid: spacing-collapse, paragraph-merge

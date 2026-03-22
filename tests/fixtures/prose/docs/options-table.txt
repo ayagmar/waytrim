@@ -1,0 +1,4 @@
+Option                 Meaning
+waytrim prose          Repair wrapped prose
+waytrim command        Clean copied commands
+waytrim auto           Stay conservative by default

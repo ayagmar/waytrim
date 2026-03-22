@@ -169,3 +169,13 @@ fn prose_preserves_indented_block_fixture() {
     );
     assert_eq!(output, fixture_output("prose/negative/indented-block"));
 }
+
+#[test]
+fn prose_preserves_options_table_fixture() {
+    let input = fixture_input("prose/docs/options-table");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/docs/options-table");
+
+    assert!(meta.preserve.iter().any(|value| value == "aligned columns"));
+    assert_eq!(output, fixture_output("prose/docs/options-table"));
+}

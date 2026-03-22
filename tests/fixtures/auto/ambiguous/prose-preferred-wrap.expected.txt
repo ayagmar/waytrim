@@ -1,0 +1,4 @@
+This copied answer came from a narrow pane
+and lost its paragraph shape
+but the conservative auto policy should wait
+for an explicit prose preference

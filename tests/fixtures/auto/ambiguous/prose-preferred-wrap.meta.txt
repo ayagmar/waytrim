@@ -1,0 +1,3 @@
+notes: prose-like wrapped text without punctuation-heavy signals
+preserve: line breaks under conservative auto
+avoid: eager prose-classification
