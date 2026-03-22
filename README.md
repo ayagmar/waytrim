@@ -16,11 +16,15 @@ waytrim prose --clipboard
 waytrim prose --clipboard --print
 waytrim prose --clipboard --preview
 waytrim prose --clipboard --explain
+waytrim --no-preview
+waytrim --no-explain
+waytrim --no-print
+waytrim --no-clipboard
 ```
 
 The canonical interface is mode-centered. Clipboard actions use `waytrim <mode> --clipboard`, not `waytrim clipboard <mode>`.
 
-The CLI reads from stdin and writes cleaned text to stdout by default. `--preview` prints a diff-like before/after view, and `--explain` prints a human-readable report of what changed and why. In clipboard mode it reads the current clipboard text, repairs it through the same core logic, and writes the repaired text back unless the selected output mode is explicitly non-mutating.
+The CLI reads from stdin and writes cleaned text to stdout by default. `--preview` prints a diff-like before/after view, and `--explain` prints a human-readable report of what changed and why. In clipboard mode it reads the current clipboard text, repairs it through the same core logic, and writes the repaired text back unless the selected output mode is explicitly non-mutating. User config can provide default mode, output behavior, and a small policy surface; explicit CLI flags override config values.
 
 ## Modes
 
@@ -43,6 +47,40 @@ The CLI reads from stdin and writes cleaned text to stdout by default. `--previe
 - declines to merge short label-plus-command snippets such as `Install command:` followed by a command
 - stays conservative on mixed prose-plus-command snippets and falls back to minimal prose-safe cleanup
 - otherwise prefers prose repair or minimal prose-safe cleanup
+
+## User config
+
+Config path:
+- `XDG_CONFIG_HOME/waytrim/config.toml`
+- or `~/.config/waytrim/config.toml`
+
+Rules:
+- missing config is silent
+- invalid config prints a warning and falls back to built-in defaults
+- explicit CLI flags override config values
+
+Initial config-backed policy surface:
+- `protect.aligned_columns`
+- `protect.command_blocks`
+- `[auto].policy = "conservative" | "prose_preferred"`
+
+Example:
+
+```toml
+[defaults]
+mode = "prose"
+preview = false
+explain = false
+clipboard = false
+print = false
+
+[protect]
+aligned_columns = true
+command_blocks = true
+
+[auto]
+policy = "conservative"
+```
 
 ## Preview
 
@@ -90,7 +128,7 @@ Current corpus coverage includes:
 - PI/TUI wrapped bullet and numbered-list continuations
 - wrapped doc and PI blockquotes
 - mixed doc and PI prose with preserved standalone command blocks
-- alignment-sensitive / table-ish text that prose should preserve
+- alignment-sensitive / table-ish text, including docs option tables, that prose should preserve by default
 - already-clean prose that should remain unchanged
 - heading and indented-section no-op cases that prose should preserve
 - fenced-code preservation cases, including PI output
@@ -98,5 +136,5 @@ Current corpus coverage includes:
 - already-clean shell commands that should remain unchanged
 - multiline PI command cleanup
 - mixed command/output transcripts that should stay unchanged
-- ambiguous label-plus-command, transcript-like, mixed prose-command, and aligned-columns snippets that `auto` should leave alone
+- ambiguous label-plus-command, transcript-like, mixed prose-command, aligned-columns, and prose-preferred auto snippets that `auto` should leave alone under the conservative default
 - unchanged preview and clipboard no-op cases for safe inputs, including command-mode clipboard/transcript paths and heading/indented prose fixtures

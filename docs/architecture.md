@@ -20,6 +20,7 @@ The core library owns:
 
 - repair modes (`prose`, `command`, `auto`)
 - conservative cleanup heuristics
+- a small `RepairPolicy` / `AutoPolicy` surface for proven boundaries
 - preview and explain rendering
 - stable text-in / text-out behavior
 
@@ -38,6 +39,8 @@ The core should remain independent from:
 The CLI is the current canonical interface. It is intentionally thin:
 
 - parse args
+- load user defaults from `src/config.rs`
+- merge config defaults with explicit CLI overrides
 - read stdin or clipboard text through an adapter
 - call the core library
 - print repaired text, preview output, or explain output
@@ -45,7 +48,7 @@ The CLI is the current canonical interface. It is intentionally thin:
 
 The preferred clipboard UX is mode-centered: `waytrim prose --clipboard`, not `waytrim clipboard prose`.
 
-Clipboard handling itself stays in a small backend adapter (`src/clipboard.rs`) that shells out to `wl-paste` and `wl-copy`. The CLI flow reuses the same `repair()`, `render_preview()`, and `render_explain()` paths as stdin mode, and keeps clipboard status messaging separate from cleaned text output.
+Clipboard handling itself stays in a small backend adapter (`src/clipboard.rs`) that shells out to `wl-paste` and `wl-copy`. User config loading lives in `src/config.rs` and resolves to typed defaults before the CLI adapter runs. The CLI flow reuses the same `repair_with_policy()`, `render_preview()`, and `render_explain()` paths as stdin mode, and keeps clipboard status messaging separate from cleaned text output.
 
 ## Mode boundaries
 
@@ -85,4 +88,4 @@ These are expected to stay outside the core:
 
 Those layers should call the same core repair contracts rather than introducing separate cleanup logic.
 
-For the manual clipboard slice, `--preview` and `--explain` must remain non-mutating, `--print` must have explicit semantics, and `clipboard unchanged` should be treated as a first-class successful outcome.
+For the manual clipboard slice, `--preview` and `--explain` must remain non-mutating, `--print` must have explicit semantics, and `clipboard unchanged` should be treated as a first-class successful outcome. Missing user config should be silent, invalid user config should warn and fall back to built-in defaults, and explicit CLI flags should always win over file config.
