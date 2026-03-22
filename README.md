@@ -11,9 +11,13 @@ waytrim prose
 waytrim command
 waytrim auto
 waytrim prose --preview
+waytrim prose --clipboard
+waytrim prose --clipboard --print
 ```
 
-The CLI reads from stdin and writes cleaned text to stdout.
+The canonical interface is mode-centered. Clipboard actions use `waytrim <mode> --clipboard`, not `waytrim clipboard <mode>`.
+
+The CLI reads from stdin and writes cleaned text to stdout by default. In clipboard mode it reads the current clipboard text, repairs it through the same core logic, and writes the repaired text back.
 
 ## Modes
 
@@ -35,6 +39,19 @@ The CLI reads from stdin and writes cleaned text to stdout.
 ## Preview
 
 Use `--preview` to print a simple before/after diff-like view instead of cleaned text.
+
+In clipboard mode, `--preview` is explicitly non-mutating. It shows what would change without writing back to the clipboard.
+
+## Clipboard mode
+
+Clipboard support is a manual adapter over the same repair core.
+
+Planned behavior:
+- `waytrim prose --clipboard` repairs current clipboard text and writes it back
+- `waytrim prose --clipboard --print` prints repaired text to stdout and also writes it back
+- `waytrim prose --clipboard --preview` previews changes without mutating the clipboard
+- `clipboard unchanged` is a first-class success outcome when no effective change is needed
+- `--clipboard --preview --print` is rejected as ambiguous
 
 ## Development docs
 

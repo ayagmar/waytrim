@@ -43,6 +43,21 @@ printf 'Value one  \n\n\nValue two   \n' | cargo run -- auto
 printf 'This is a wrapped\nparagraph.\n' | cargo run -- prose --preview
 ```
 
+### Planned clipboard adapter shape
+
+```bash
+cargo run -- prose --clipboard
+cargo run -- prose --clipboard --print
+cargo run -- prose --clipboard --preview
+```
+
+Notes:
+- clipboard mode stays mode-centered
+- `--preview` is non-mutating in clipboard mode
+- `--print` means print repaired text and also write it back
+- `--clipboard --preview --print` is invalid
+- `clipboard unchanged` should be reported clearly when nothing changes
+
 ## Test and format
 
 ```bash
@@ -73,3 +88,4 @@ docs/
 - Prefer conservative repairs over aggressive cleanup.
 - Add negative fixtures when a change could overreach.
 - Keep platform-specific integration work outside the core library.
+- Keep clipboard behavior as a thin adapter over the same repair contracts.

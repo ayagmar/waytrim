@@ -2,7 +2,8 @@ use std::env;
 use std::io::{self, Read};
 use std::process::ExitCode;
 
-use waytrim::{Mode, render_preview, repair};
+use waytrim::cli::CliConfig;
+use waytrim::{render_preview, repair};
 
 fn main() -> ExitCode {
     match run() {
@@ -15,32 +16,27 @@ fn main() -> ExitCode {
 }
 
 fn run() -> Result<(), String> {
-    let mut mode = None;
-    let mut preview = false;
+    let args: Vec<String> = env::args().skip(1).collect();
 
-    for arg in env::args().skip(1) {
-        match arg.as_str() {
-            "prose" => mode = Some(Mode::Prose),
-            "command" => mode = Some(Mode::Command),
-            "auto" => mode = Some(Mode::Auto),
-            "--preview" => preview = true,
-            "-h" | "--help" => {
-                print_help();
-                return Ok(());
-            }
-            _ => return Err(format!("unknown argument: {arg}")),
-        }
+    if args.iter().any(|arg| matches!(arg.as_str(), "-h" | "--help")) {
+        print_help();
+        return Ok(());
     }
 
-    let mode = mode.unwrap_or(Mode::Prose);
+    let config = CliConfig::parse(args.iter().map(String::as_str))?;
+
+    if config.clipboard {
+        return Err(String::from("clipboard mode not implemented yet"));
+    }
+
     let mut input = String::new();
     io::stdin()
         .read_to_string(&mut input)
         .map_err(|error| format!("failed to read stdin: {error}"))?;
 
-    let result = repair(&input, mode);
+    let result = repair(&input, config.mode);
 
-    if preview {
+    if config.preview {
         print!("{}", render_preview(&input, &result));
         return Ok(());
     }
@@ -50,5 +46,11 @@ fn run() -> Result<(), String> {
 }
 
 fn print_help() {
-    println!("waytrim <prose|command|auto> [--preview]");
+    println!("waytrim prose");
+    println!("waytrim command");
+    println!("waytrim auto");
+    println!("waytrim prose --preview");
+    println!("waytrim prose --clipboard");
+    println!("waytrim prose --clipboard --print");
+    println!("waytrim prose --clipboard --preview");
 }

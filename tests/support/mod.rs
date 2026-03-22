@@ -2,13 +2,26 @@
 
 use std::fs;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::{Command, ExitStatus, Stdio};
+
+pub struct CommandOutput {
+    pub status: ExitStatus,
+    pub stdout: String,
+    pub stderr: String,
+}
 
 pub fn run_waytrim(args: &[&str], input: &str) -> String {
+    let output = run_waytrim_capture(args, input);
+    assert!(output.status.success(), "stderr: {}", output.stderr);
+    output.stdout
+}
+
+pub fn run_waytrim_capture(args: &[&str], input: &str) -> CommandOutput {
     let mut child = Command::new(env!("CARGO_BIN_EXE_waytrim"))
         .args(args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
         .expect("spawn waytrim");
 
@@ -21,12 +34,12 @@ pub fn run_waytrim(args: &[&str], input: &str) -> String {
         .expect("write stdin");
 
     let output = child.wait_with_output().expect("wait on child");
-    assert!(
-        output.status.success(),
-        "stderr: {}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    String::from_utf8(output.stdout).expect("utf8 stdout")
+
+    CommandOutput {
+        status: output.status,
+        stdout: String::from_utf8(output.stdout).expect("utf8 stdout"),
+        stderr: String::from_utf8(output.stderr).expect("utf8 stderr"),
+    }
 }
 
 pub fn fixture_input(stem: &str) -> String {

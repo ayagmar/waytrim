@@ -38,9 +38,12 @@ The core should remain independent from:
 The CLI is the current canonical interface. It is intentionally thin:
 
 - parse args
-- read stdin
+- read stdin or clipboard text through an adapter
 - call the core library
 - print repaired text or preview output
+- write repaired clipboard text back when clipboard mode is active
+
+The preferred clipboard UX is mode-centered: `waytrim prose --clipboard`, not `waytrim clipboard prose`.
 
 ## Mode boundaries
 
@@ -79,3 +82,5 @@ These are expected to stay outside the core:
 - Niri-oriented keybind workflows
 
 Those layers should call the same core repair contracts rather than introducing separate cleanup logic.
+
+For the manual clipboard slice, `--preview` must remain non-mutating, `--print` must have explicit semantics, and `clipboard unchanged` should be treated as a first-class successful outcome.

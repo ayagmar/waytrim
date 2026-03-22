@@ -1,3 +1,5 @@
+pub mod cli;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Mode {
     Prose,
