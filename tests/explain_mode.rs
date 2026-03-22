@@ -45,3 +45,22 @@ fn explain_reports_auto_transcript_fallback() {
     assert!(output.contains("mode: auto"));
     assert!(output.contains("- detected command transcript; used minimal prose-safe cleanup"));
 }
+
+#[test]
+fn explain_reports_policy_driven_command_block_repair() {
+    use waytrim::{Mode, RepairPolicy, repair_with_policy};
+
+    let input = "Use this command:\n\ncargo test \\\n  --test clipboard_flow\n";
+    let policy = RepairPolicy {
+        protect_command_blocks: false,
+        ..RepairPolicy::default()
+    };
+
+    let output = waytrim::render_explain(Mode::Prose, &repair_with_policy(input, Mode::Prose, &policy));
+
+    assert!(output.contains("mode: prose"));
+    assert!(
+        output.contains("joined continued command lines 3-4")
+            || output.contains("joined continued command lines 1-2")
+    );
+}

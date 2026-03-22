@@ -3,7 +3,7 @@ mod support;
 use std::cell::RefCell;
 
 use support::{fixture_input, fixture_output};
-use waytrim::Mode;
+use waytrim::{AutoPolicy, Mode, RepairPolicy};
 use waytrim::cli::{CliConfig, ClipboardFlowStatus, run_clipboard_flow};
 use waytrim::clipboard::{ClipboardBackend, ClipboardError};
 
@@ -41,16 +41,21 @@ impl ClipboardBackend for MemoryClipboard {
     }
 }
 
-#[test]
-fn clipboard_flow_repairs_and_writes_back_when_text_changes() {
-    let clipboard = MemoryClipboard::new("This is a wrapped\nparagraph.\n");
-    let config = CliConfig {
-        mode: Mode::Prose,
+fn clipboard_config(mode: Mode) -> CliConfig {
+    CliConfig {
+        mode,
         clipboard: true,
         preview: false,
         explain: false,
         print: false,
-    };
+        policy: RepairPolicy::default(),
+    }
+}
+
+#[test]
+fn clipboard_flow_repairs_and_writes_back_when_text_changes() {
+    let clipboard = MemoryClipboard::new("This is a wrapped\nparagraph.\n");
+    let config = clipboard_config(Mode::Prose);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
@@ -68,11 +73,8 @@ fn clipboard_flow_repairs_and_writes_back_when_text_changes() {
 fn clipboard_flow_prints_and_writes_back_when_requested() {
     let clipboard = MemoryClipboard::new("This is a wrapped\nparagraph.\n");
     let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
-        preview: false,
-        explain: false,
         print: true,
+        ..clipboard_config(Mode::Prose)
     };
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
@@ -87,11 +89,8 @@ fn clipboard_flow_prints_and_writes_back_when_requested() {
 fn clipboard_preview_shows_changes_without_mutating_clipboard() {
     let clipboard = MemoryClipboard::new("This is a wrapped\nparagraph.\n");
     let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
         preview: true,
-        explain: false,
-        print: false,
+        ..clipboard_config(Mode::Prose)
     };
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
@@ -108,11 +107,8 @@ fn clipboard_preview_shows_changes_without_mutating_clipboard() {
 fn clipboard_explain_shows_repairs_without_mutating_clipboard() {
     let clipboard = MemoryClipboard::new("This is a wrapped\nparagraph.\n");
     let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
-        preview: false,
         explain: true,
-        print: false,
+        ..clipboard_config(Mode::Prose)
     };
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
@@ -132,13 +128,7 @@ fn clipboard_explain_shows_repairs_without_mutating_clipboard() {
 #[test]
 fn clipboard_flow_reports_unchanged_text_as_success() {
     let clipboard = MemoryClipboard::new("Already clean text.\n");
-    let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
-        preview: false,
-        explain: false,
-        print: false,
-    };
+    let config = clipboard_config(Mode::Prose);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
@@ -151,13 +141,7 @@ fn clipboard_flow_reports_unchanged_text_as_success() {
 #[test]
 fn clipboard_flow_handles_empty_clipboard_without_crashing() {
     let clipboard = MemoryClipboard::new("");
-    let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
-        preview: false,
-        explain: false,
-        print: false,
-    };
+    let config = clipboard_config(Mode::Prose);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
@@ -172,13 +156,7 @@ fn clipboard_flow_uses_tui_status_fixture_through_prose_mode() {
     let input = fixture_input("prose/tui/status-update");
     let expected = fixture_output("prose/tui/status-update");
     let clipboard = MemoryClipboard::new(&input);
-    let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
-        preview: false,
-        explain: false,
-        print: false,
-    };
+    let config = clipboard_config(Mode::Prose);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
@@ -190,13 +168,7 @@ fn clipboard_flow_uses_tui_status_fixture_through_prose_mode() {
 fn clipboard_flow_reports_unchanged_for_fenced_code_fixture() {
     let input = fixture_input("prose/negative/code-fence");
     let clipboard = MemoryClipboard::new(&input);
-    let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
-        preview: false,
-        explain: false,
-        print: false,
-    };
+    let config = clipboard_config(Mode::Prose);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
@@ -208,13 +180,7 @@ fn clipboard_flow_repairs_pi_bullets_fixture_through_prose_mode() {
     let input = fixture_input("prose/pi/pi-bullets");
     let expected = fixture_output("prose/pi/pi-bullets");
     let clipboard = MemoryClipboard::new(&input);
-    let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
-        preview: false,
-        explain: false,
-        print: false,
-    };
+    let config = clipboard_config(Mode::Prose);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
@@ -226,13 +192,7 @@ fn clipboard_flow_repairs_pi_bullets_fixture_through_prose_mode() {
 fn clipboard_flow_reports_unchanged_for_pi_fenced_code_fixture() {
     let input = fixture_input("prose/pi/pi-code-fence");
     let clipboard = MemoryClipboard::new(&input);
-    let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
-        preview: false,
-        explain: false,
-        print: false,
-    };
+    let config = clipboard_config(Mode::Prose);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
@@ -244,13 +204,7 @@ fn clipboard_flow_repairs_mixed_pi_prose_without_changing_command_block() {
     let input = fixture_input("prose/pi/mixed-command-block");
     let expected = fixture_output("prose/pi/mixed-command-block");
     let clipboard = MemoryClipboard::new(&input);
-    let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
-        preview: false,
-        explain: false,
-        print: false,
-    };
+    let config = clipboard_config(Mode::Prose);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
@@ -262,13 +216,7 @@ fn clipboard_flow_repairs_mixed_pi_prose_without_changing_command_block() {
 fn clipboard_flow_reports_unchanged_for_alignment_sensitive_fixture() {
     let input = fixture_input("prose/negative/aligned-columns");
     let clipboard = MemoryClipboard::new(&input);
-    let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
-        preview: false,
-        explain: false,
-        print: false,
-    };
+    let config = clipboard_config(Mode::Prose);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
@@ -281,11 +229,8 @@ fn clipboard_preview_reports_no_changes_for_already_clean_fixture() {
     let input = fixture_input("prose/negative/already-clean");
     let clipboard = MemoryClipboard::new(&input);
     let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
         preview: true,
-        explain: false,
-        print: false,
+        ..clipboard_config(Mode::Prose)
     };
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
@@ -300,13 +245,7 @@ fn clipboard_preview_reports_no_changes_for_already_clean_fixture() {
 fn clipboard_flow_command_mode_reports_unchanged_for_already_clean_command() {
     let input = fixture_input("command/negative/already-clean-command");
     let clipboard = MemoryClipboard::new(&input);
-    let config = CliConfig {
-        mode: Mode::Command,
-        clipboard: true,
-        preview: false,
-        explain: false,
-        print: false,
-    };
+    let config = clipboard_config(Mode::Command);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
@@ -318,13 +257,7 @@ fn clipboard_flow_command_mode_reports_unchanged_for_already_clean_command() {
 fn clipboard_flow_command_mode_preserves_transcript_as_unchanged() {
     let input = fixture_input("command/negative/pi-command-plus-output");
     let clipboard = MemoryClipboard::new(&input);
-    let config = CliConfig {
-        mode: Mode::Command,
-        clipboard: true,
-        preview: false,
-        explain: false,
-        print: false,
-    };
+    let config = clipboard_config(Mode::Command);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
@@ -336,13 +269,7 @@ fn clipboard_flow_command_mode_preserves_transcript_as_unchanged() {
 fn clipboard_flow_reports_unchanged_for_heading_fixture() {
     let input = fixture_input("prose/negative/heading");
     let clipboard = MemoryClipboard::new(&input);
-    let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
-        preview: false,
-        explain: false,
-        print: false,
-    };
+    let config = clipboard_config(Mode::Prose);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
@@ -354,16 +281,35 @@ fn clipboard_flow_reports_unchanged_for_heading_fixture() {
 fn clipboard_flow_reports_unchanged_for_indented_block_fixture() {
     let input = fixture_input("prose/negative/indented-block");
     let clipboard = MemoryClipboard::new(&input);
-    let config = CliConfig {
-        mode: Mode::Prose,
-        clipboard: true,
-        preview: false,
-        explain: false,
-        print: false,
-    };
+    let config = clipboard_config(Mode::Prose);
 
     let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
 
     assert_eq!(output.status, ClipboardFlowStatus::Unchanged);
     assert!(clipboard.writes().is_empty());
+}
+
+#[test]
+fn clipboard_flow_uses_policy_from_resolved_config() {
+    let input = fixture_input("auto/ambiguous/prose-preferred-wrap");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = CliConfig {
+        mode: Mode::Auto,
+        clipboard: true,
+        preview: false,
+        explain: false,
+        print: false,
+        policy: RepairPolicy {
+            auto_policy: AutoPolicy::ProsePreferred,
+            ..RepairPolicy::default()
+        },
+    };
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Updated);
+    assert_eq!(
+        clipboard.current(),
+        "This copied answer came from a narrow pane and lost its paragraph shape but the conservative auto policy should wait for an explicit prose preference\n"
+    );
 }
