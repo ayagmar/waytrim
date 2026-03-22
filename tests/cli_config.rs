@@ -41,3 +41,11 @@ fn rejects_preview_and_explain_together() {
 
     assert!(error.contains("cannot combine --preview and --explain"));
 }
+
+#[test]
+fn parses_explain_flag() {
+    let config = CliConfig::parse(["command", "--explain"]).expect("parse config");
+
+    assert_eq!(config.mode, Mode::Command);
+    assert!(config.explain);
+}

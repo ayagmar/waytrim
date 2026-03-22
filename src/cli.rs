@@ -1,5 +1,5 @@
 use crate::clipboard::ClipboardBackend;
-use crate::{Mode, render_preview, repair};
+use crate::{Mode, render_explain, render_preview, repair};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CliConfig {
@@ -15,6 +15,7 @@ pub enum ClipboardFlowStatus {
     Updated,
     Unchanged,
     Preview,
+    Explain,
     Empty,
 }
 
@@ -68,6 +69,12 @@ impl CliConfig {
             ));
         }
 
+        if config.clipboard && config.explain && config.print {
+            return Err(String::from(
+                "cannot combine --explain and --print with --clipboard",
+            ));
+        }
+
         Ok(config)
     }
 }
@@ -95,6 +102,14 @@ pub fn run_clipboard_flow<B: ClipboardBackend>(
             stdout: render_preview(&input, &result),
             stderr: String::from("clipboard preview only; nothing was written\n"),
             status: ClipboardFlowStatus::Preview,
+        });
+    }
+
+    if config.explain {
+        return Ok(ClipboardFlowOutput {
+            stdout: render_explain(config.mode, &result),
+            stderr: String::from("clipboard explain only; nothing was written\n"),
+            status: ClipboardFlowStatus::Explain,
         });
     }
 

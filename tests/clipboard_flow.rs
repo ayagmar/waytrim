@@ -48,6 +48,7 @@ fn clipboard_flow_repairs_and_writes_back_when_text_changes() {
         mode: Mode::Prose,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
@@ -70,6 +71,7 @@ fn clipboard_flow_prints_and_writes_back_when_requested() {
         mode: Mode::Prose,
         clipboard: true,
         preview: false,
+        explain: false,
         print: true,
     };
 
@@ -88,6 +90,7 @@ fn clipboard_preview_shows_changes_without_mutating_clipboard() {
         mode: Mode::Prose,
         clipboard: true,
         preview: true,
+        explain: false,
         print: false,
     };
 
@@ -102,12 +105,34 @@ fn clipboard_preview_shows_changes_without_mutating_clipboard() {
 }
 
 #[test]
+fn clipboard_explain_shows_repairs_without_mutating_clipboard() {
+    let clipboard = MemoryClipboard::new("This is a wrapped\nparagraph.\n");
+    let config = CliConfig {
+        mode: Mode::Prose,
+        clipboard: true,
+        preview: false,
+        explain: true,
+        print: false,
+    };
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Explain);
+    assert!(output.stdout.contains("mode: prose"));
+    assert!(output.stdout.contains("- joined wrapped paragraph lines 1-2"));
+    assert!(output.stderr.contains("clipboard explain only"));
+    assert_eq!(clipboard.current(), "This is a wrapped\nparagraph.\n");
+    assert!(clipboard.writes().is_empty());
+}
+
+#[test]
 fn clipboard_flow_reports_unchanged_text_as_success() {
     let clipboard = MemoryClipboard::new("Already clean text.\n");
     let config = CliConfig {
         mode: Mode::Prose,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
@@ -126,6 +151,7 @@ fn clipboard_flow_handles_empty_clipboard_without_crashing() {
         mode: Mode::Prose,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
@@ -146,6 +172,7 @@ fn clipboard_flow_uses_tui_status_fixture_through_prose_mode() {
         mode: Mode::Prose,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
@@ -163,6 +190,7 @@ fn clipboard_flow_reports_unchanged_for_fenced_code_fixture() {
         mode: Mode::Prose,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
@@ -180,6 +208,7 @@ fn clipboard_flow_repairs_pi_bullets_fixture_through_prose_mode() {
         mode: Mode::Prose,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
@@ -197,6 +226,7 @@ fn clipboard_flow_reports_unchanged_for_pi_fenced_code_fixture() {
         mode: Mode::Prose,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
@@ -214,6 +244,7 @@ fn clipboard_flow_repairs_mixed_pi_prose_without_changing_command_block() {
         mode: Mode::Prose,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
@@ -231,6 +262,7 @@ fn clipboard_flow_reports_unchanged_for_alignment_sensitive_fixture() {
         mode: Mode::Prose,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
@@ -248,6 +280,7 @@ fn clipboard_preview_reports_no_changes_for_already_clean_fixture() {
         mode: Mode::Prose,
         clipboard: true,
         preview: true,
+        explain: false,
         print: false,
     };
 
@@ -267,6 +300,7 @@ fn clipboard_flow_command_mode_reports_unchanged_for_already_clean_command() {
         mode: Mode::Command,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
@@ -284,6 +318,7 @@ fn clipboard_flow_command_mode_preserves_transcript_as_unchanged() {
         mode: Mode::Command,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
@@ -301,6 +336,7 @@ fn clipboard_flow_reports_unchanged_for_heading_fixture() {
         mode: Mode::Prose,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
@@ -318,6 +354,7 @@ fn clipboard_flow_reports_unchanged_for_indented_block_fixture() {
         mode: Mode::Prose,
         clipboard: true,
         preview: false,
+        explain: false,
         print: false,
     };
 
