@@ -258,3 +258,37 @@ fn clipboard_preview_reports_no_changes_for_already_clean_fixture() {
     assert!(output.stderr.contains("clipboard preview only"));
     assert!(clipboard.writes().is_empty());
 }
+
+#[test]
+fn clipboard_flow_command_mode_reports_unchanged_for_already_clean_command() {
+    let input = fixture_input("command/negative/already-clean-command");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = CliConfig {
+        mode: Mode::Command,
+        clipboard: true,
+        preview: false,
+        print: false,
+    };
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Unchanged);
+    assert!(clipboard.writes().is_empty());
+}
+
+#[test]
+fn clipboard_flow_command_mode_preserves_transcript_as_unchanged() {
+    let input = fixture_input("command/negative/pi-command-plus-output");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = CliConfig {
+        mode: Mode::Command,
+        clipboard: true,
+        preview: false,
+        print: false,
+    };
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Unchanged);
+    assert!(clipboard.writes().is_empty());
+}

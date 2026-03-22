@@ -58,3 +58,13 @@ fn preview_reports_no_changes_for_already_clean_fixture() {
     assert!(output.contains("+++ after"));
     assert!(output.contains("(no changes)"));
 }
+
+#[test]
+fn preview_reports_no_changes_for_already_clean_command_fixture() {
+    let input = fixture_input("command/negative/already-clean-command");
+    let output = run_waytrim(&["command", "--preview"], &input);
+
+    assert!(output.contains("--- before"));
+    assert!(output.contains("+++ after"));
+    assert!(output.contains("(no changes)"));
+}

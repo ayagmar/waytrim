@@ -54,3 +54,16 @@ fn command_preserves_pi_command_plus_output_fixture() {
         fixture_output("command/negative/pi-command-plus-output")
     );
 }
+
+#[test]
+fn command_leaves_already_clean_command_fixture_unchanged() {
+    let input = fixture_input("command/negative/already-clean-command");
+    let output = run_waytrim(&["command"], &input);
+    let meta = fixture_meta("command/negative/already-clean-command");
+
+    assert!(meta.avoid.iter().any(|value| value == "rewrite"));
+    assert_eq!(
+        output,
+        fixture_output("command/negative/already-clean-command")
+    );
+}

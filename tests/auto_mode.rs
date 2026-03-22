@@ -66,3 +66,14 @@ fn auto_declines_to_rewrite_alignment_sensitive_columns_fixture() {
 
     assert_eq!(output, fixture_output("auto/ambiguous/aligned-columns"));
 }
+
+#[test]
+fn auto_leaves_already_clean_command_fixture_unchanged() {
+    let input = fixture_input("command/negative/already-clean-command");
+    let output = run_waytrim(&["auto"], &input);
+
+    assert_eq!(
+        output,
+        fixture_output("command/negative/already-clean-command")
+    );
+}

@@ -32,6 +32,7 @@ The CLI reads from stdin and writes cleaned text to stdout by default. In clipbo
 - bounded secondary mode
 - strips obvious prompts and repairs command presentation damage
 - handles bare prompts and common host-style shell prompts conservatively
+- leaves already-clean shell commands unchanged
 - leaves mixed command/output snippets unchanged unless the command shape is obvious
 
 ### `auto`
@@ -89,7 +90,8 @@ Current corpus coverage includes:
 - already-clean prose that should remain unchanged
 - fenced-code preservation cases, including PI output
 - bare and host-style shell prompts
+- already-clean shell commands that should remain unchanged
 - multiline PI command cleanup
 - mixed command/output transcripts that should stay unchanged
 - ambiguous label-plus-command, transcript-like, mixed prose-command, and aligned-columns snippets that `auto` should leave alone
-- unchanged preview and clipboard no-op cases for safe inputs
+- unchanged preview and clipboard no-op cases for safe inputs, including command-mode clipboard/transcript paths

@@ -1,0 +1,3 @@
+notes: already-clean shell command should remain unchanged
+preserve: shell command
+avoid: rewrite, prompt-invention
