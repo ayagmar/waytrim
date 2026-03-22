@@ -36,8 +36,8 @@ fn rejects_subcommand_style_clipboard_shape() {
 
 #[test]
 fn rejects_preview_and_explain_together() {
-    let error = CliConfig::parse(["prose", "--preview", "--explain"])
-        .expect_err("expected parse error");
+    let error =
+        CliConfig::parse(["prose", "--preview", "--explain"]).expect_err("expected parse error");
 
     assert!(error.contains("cannot combine --preview and --explain"));
 }

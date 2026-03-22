@@ -119,7 +119,11 @@ fn clipboard_explain_shows_repairs_without_mutating_clipboard() {
 
     assert_eq!(output.status, ClipboardFlowStatus::Explain);
     assert!(output.stdout.contains("mode: prose"));
-    assert!(output.stdout.contains("- joined wrapped paragraph lines 1-2"));
+    assert!(
+        output
+            .stdout
+            .contains("- joined wrapped paragraph lines 1-2")
+    );
     assert!(output.stderr.contains("clipboard explain only"));
     assert_eq!(clipboard.current(), "This is a wrapped\nparagraph.\n");
     assert!(clipboard.writes().is_empty());

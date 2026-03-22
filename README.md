@@ -11,14 +11,16 @@ waytrim prose
 waytrim command
 waytrim auto
 waytrim prose --preview
+waytrim prose --explain
 waytrim prose --clipboard
 waytrim prose --clipboard --print
 waytrim prose --clipboard --preview
+waytrim prose --clipboard --explain
 ```
 
 The canonical interface is mode-centered. Clipboard actions use `waytrim <mode> --clipboard`, not `waytrim clipboard <mode>`.
 
-The CLI reads from stdin and writes cleaned text to stdout by default. In clipboard mode it reads the current clipboard text, repairs it through the same core logic, and writes the repaired text back.
+The CLI reads from stdin and writes cleaned text to stdout by default. `--preview` prints a diff-like before/after view, and `--explain` prints a human-readable report of what changed and why. In clipboard mode it reads the current clipboard text, repairs it through the same core logic, and writes the repaired text back unless the selected output mode is explicitly non-mutating.
 
 ## Modes
 
@@ -56,9 +58,11 @@ Behavior:
 - `waytrim prose --clipboard` repairs current clipboard text and writes it back when it changes
 - `waytrim prose --clipboard --print` prints repaired text to stdout and also writes it back when it changes
 - `waytrim prose --clipboard --preview` previews changes without mutating the clipboard
+- `waytrim prose --clipboard --explain` explains changes without mutating the clipboard
 - `clipboard unchanged` is a first-class success outcome when no effective change is needed
 - empty clipboard input returns a clear success message instead of crashing
 - `--clipboard --preview --print` is rejected as ambiguous
+- `--clipboard --explain --print` is rejected as ambiguous
 
 Runtime dependency:
 - Wayland clipboard support uses `wl-paste` and `wl-copy`

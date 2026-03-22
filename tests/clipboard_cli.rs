@@ -29,7 +29,11 @@ fn help_shows_explain_interface() {
 
     assert!(output.status.success());
     assert!(output.stdout.contains("waytrim prose --explain"));
-    assert!(output.stdout.contains("waytrim prose --clipboard --explain"));
+    assert!(
+        output
+            .stdout
+            .contains("waytrim prose --clipboard --explain")
+    );
 }
 
 #[test]

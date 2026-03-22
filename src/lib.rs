@@ -411,10 +411,7 @@ fn repair_command(input: &str) -> (String, Vec<ExplainStep>) {
             continue;
         }
 
-        if lines
-            .last()
-            .is_some_and(|(_, line)| line.ends_with('\\'))
-        {
+        if lines.last().is_some_and(|(_, line)| line.ends_with('\\')) {
             lines.push((Some(line_number), trimmed_end.trim_start().to_string()));
             continue;
         }
@@ -424,11 +421,17 @@ fn repair_command(input: &str) -> (String, Vec<ExplainStep>) {
             continue;
         }
 
-        return (finish_with_newline(input.trim_end().to_string()), Vec::new());
+        return (
+            finish_with_newline(input.trim_end().to_string()),
+            Vec::new(),
+        );
     }
 
     if !saw_prompt && !looks_like_command(input) {
-        return (finish_with_newline(input.trim_end().to_string()), Vec::new());
+        return (
+            finish_with_newline(input.trim_end().to_string()),
+            Vec::new(),
+        );
     }
 
     let mut joined = Vec::new();
