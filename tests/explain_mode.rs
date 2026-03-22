@@ -56,7 +56,10 @@ fn explain_reports_policy_driven_command_block_repair() {
         ..RepairPolicy::default()
     };
 
-    let output = waytrim::render_explain(Mode::Prose, &repair_with_policy(input, Mode::Prose, &policy));
+    let output = waytrim::render_explain(
+        Mode::Prose,
+        &repair_with_policy(input, Mode::Prose, &policy),
+    );
 
     assert!(output.contains("mode: prose"));
     assert!(

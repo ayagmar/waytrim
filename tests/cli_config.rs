@@ -1,5 +1,5 @@
-use waytrim::{AutoPolicy, Mode, RepairPolicy};
 use waytrim::cli::{CliArgs, CliConfig, ConfigDefaults};
+use waytrim::{AutoPolicy, Mode, RepairPolicy};
 
 #[test]
 fn parses_mode_centered_clipboard_flags() {

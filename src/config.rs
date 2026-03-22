@@ -82,7 +82,10 @@ fn parse_file_config(contents: &str) -> Result<FileConfig, toml::de::Error> {
     toml::from_str(contents)
 }
 
-fn apply_file_config(mut defaults: ConfigDefaults, file: FileConfig) -> Result<ConfigDefaults, String> {
+fn apply_file_config(
+    mut defaults: ConfigDefaults,
+    file: FileConfig,
+) -> Result<ConfigDefaults, String> {
     if let Some(mode) = file.defaults.mode {
         defaults.mode = parse_mode(&mode)?;
     }

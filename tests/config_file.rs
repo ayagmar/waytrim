@@ -25,8 +25,11 @@ fn invalid_user_config_warns_and_falls_back_to_defaults() {
     let config_home = temp_dir_path("invalid-config-home");
     let config_dir = config_home.join("waytrim");
     fs::create_dir_all(&config_dir).expect("create config dir");
-    fs::write(config_dir.join("config.toml"), "[defaults\nmode = 'prose'\n")
-        .expect("write invalid toml");
+    fs::write(
+        config_dir.join("config.toml"),
+        "[defaults\nmode = 'prose'\n",
+    )
+    .expect("write invalid toml");
 
     let output = run_waytrim_capture_env(
         &["prose"],
@@ -66,8 +69,11 @@ fn cli_flag_overrides_configured_preview_default() {
     let config_home = temp_dir_path("override-preview-home");
     let config_dir = config_home.join("waytrim");
     fs::create_dir_all(&config_dir).expect("create config dir");
-    fs::write(config_dir.join("config.toml"), "[defaults]\npreview = true\n")
-        .expect("write config");
+    fs::write(
+        config_dir.join("config.toml"),
+        "[defaults]\npreview = true\n",
+    )
+    .expect("write config");
 
     let output = run_waytrim_capture_env(
         &["--no-preview"],
@@ -84,8 +90,11 @@ fn config_can_enable_explain_by_default() {
     let config_home = temp_dir_path("default-explain-home");
     let config_dir = config_home.join("waytrim");
     fs::create_dir_all(&config_dir).expect("create config dir");
-    fs::write(config_dir.join("config.toml"), "[defaults]\nexplain = true\n")
-        .expect("write config");
+    fs::write(
+        config_dir.join("config.toml"),
+        "[defaults]\nexplain = true\n",
+    )
+    .expect("write config");
 
     let output = run_waytrim_capture_env(
         &["prose"],

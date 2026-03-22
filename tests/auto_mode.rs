@@ -99,5 +99,8 @@ fn auto_keeps_prose_preferred_fixture_unchanged_when_conservative() {
     let input = fixture_input("auto/ambiguous/prose-preferred-wrap");
     let output = run_waytrim(&["auto"], &input);
 
-    assert_eq!(output, fixture_output("auto/ambiguous/prose-preferred-wrap"));
+    assert_eq!(
+        output,
+        fixture_output("auto/ambiguous/prose-preferred-wrap")
+    );
 }

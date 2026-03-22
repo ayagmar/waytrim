@@ -26,7 +26,10 @@ fn prose_can_repair_standalone_command_blocks_when_command_block_protection_is_d
 
     let result = repair_with_policy(input, Mode::Prose, &policy);
 
-    assert_eq!(result.output, "Use this command:\n\ncargo test --test clipboard_flow\n");
+    assert_eq!(
+        result.output,
+        "Use this command:\n\ncargo test --test clipboard_flow\n"
+    );
 }
 
 #[test]

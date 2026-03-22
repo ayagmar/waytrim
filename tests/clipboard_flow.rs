@@ -3,9 +3,9 @@ mod support;
 use std::cell::RefCell;
 
 use support::{fixture_input, fixture_output};
-use waytrim::{AutoPolicy, Mode, RepairPolicy};
 use waytrim::cli::{CliConfig, ClipboardFlowStatus, run_clipboard_flow};
 use waytrim::clipboard::{ClipboardBackend, ClipboardError};
+use waytrim::{AutoPolicy, Mode, RepairPolicy};
 
 struct MemoryClipboard {
     value: RefCell<String>,
