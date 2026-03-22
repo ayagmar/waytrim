@@ -80,7 +80,11 @@ Fixtures live under `tests/fixtures/` and are organized by mode first, then sour
 Current corpus coverage includes:
 - AI-terminal wrapped prose
 - TUI status-update bullets
-- wrapped doc blockquotes
-- fenced-code negative cases
+- PI/TUI wrapped prose paragraphs
+- PI/TUI wrapped bullet and numbered-list continuations
+- wrapped doc and PI blockquotes
+- fenced-code preservation cases, including PI output
 - bare and host-style shell prompts
-- ambiguous label-plus-command snippets that `auto` should leave split
+- multiline PI command cleanup
+- mixed command/output transcripts that should stay unchanged
+- ambiguous label-plus-command and transcript-like snippets that `auto` should leave alone

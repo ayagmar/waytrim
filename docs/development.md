@@ -95,6 +95,6 @@ docs/
 - Add negative fixtures when a change could overreach.
 - Keep platform-specific integration work outside the core library.
 - Keep clipboard behavior as a thin adapter over the same repair contracts.
-- Current prose boundaries explicitly cover wrapped blockquotes and fenced-code preservation.
-- Current command boundaries explicitly cover common host-style shell prompts.
-- Current auto boundaries explicitly avoid merging short label-plus-command snippets.
+- Current prose boundaries explicitly cover wrapped PI/TUI paragraphs, wrapped bullet and numbered-list continuations, wrapped blockquotes, inline-code bullets, and fenced-code preservation.
+- Current command boundaries explicitly cover common host-style shell prompts, multiline PI command cleanup, and transcript refusal.
+- Current auto boundaries explicitly avoid merging short label-plus-command snippets and transcript-like command/output captures.
