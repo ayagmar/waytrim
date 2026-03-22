@@ -2,9 +2,10 @@ use std::env;
 use std::io::{self, Read};
 use std::process::ExitCode;
 
-use waytrim::cli::{CliConfig, run_clipboard_flow};
+use waytrim::cli::{CliArgs, CliConfig, run_clipboard_flow};
 use waytrim::clipboard::SystemClipboard;
-use waytrim::{render_explain, render_preview, repair};
+use waytrim::config::load_user_defaults;
+use waytrim::{render_explain, render_preview, repair_with_policy};
 
 fn main() -> ExitCode {
     match run() {
@@ -27,7 +28,12 @@ fn run() -> Result<(), String> {
         return Ok(());
     }
 
-    let config = CliConfig::parse(args.iter().map(String::as_str))?;
+    let args = CliArgs::parse(args.iter().map(String::as_str))?;
+    let (defaults, warning) = load_user_defaults();
+    if let Some(warning) = warning {
+        eprintln!("{warning}");
+    }
+    let config = CliConfig::resolve(args, defaults)?;
 
     if config.clipboard {
         let output = run_clipboard_flow(&config, &SystemClipboard::new())?;
@@ -41,7 +47,7 @@ fn run() -> Result<(), String> {
         .read_to_string(&mut input)
         .map_err(|error| format!("failed to read stdin: {error}"))?;
 
-    let result = repair(&input, config.mode);
+    let result = repair_with_policy(&input, config.mode, &config.policy);
 
     if config.preview {
         print!("{}", render_preview(&input, &result));

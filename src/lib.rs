@@ -1,5 +1,6 @@
 pub mod cli;
 pub mod clipboard;
+pub mod config;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Mode {

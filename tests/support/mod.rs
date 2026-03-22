@@ -21,13 +21,22 @@ pub fn run_waytrim(args: &[&str], input: &str) -> String {
 }
 
 pub fn run_waytrim_capture(args: &[&str], input: &str) -> CommandOutput {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_waytrim"))
+    run_waytrim_capture_env(args, input, &[])
+}
+
+pub fn run_waytrim_capture_env(args: &[&str], input: &str, envs: &[(&str, &str)]) -> CommandOutput {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_waytrim"));
+    command
         .args(args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("spawn waytrim");
+        .stderr(Stdio::piped());
+
+    for (key, value) in envs {
+        command.env(key, value);
+    }
+
+    let mut child = command.spawn().expect("spawn waytrim");
 
     use std::io::Write;
     child
@@ -105,6 +114,10 @@ pub fn temp_file_path(stem: &str) -> PathBuf {
 
     let unique = COUNTER.fetch_add(1, Ordering::Relaxed);
     std::env::temp_dir().join(format!("waytrim-{stem}-{}-{unique}", std::process::id()))
+}
+
+pub fn temp_dir_path(stem: &str) -> PathBuf {
+    temp_file_path(stem)
 }
 
 pub fn write_executable_script(stem: &str, contents: &str) -> PathBuf {
