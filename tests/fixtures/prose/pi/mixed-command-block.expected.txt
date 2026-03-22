@@ -1,0 +1,7 @@
+If you only want the clipboard regression, run this command after copying the reply:
+
+cargo test \
+  --test clipboard_flow \
+  -- --nocapture
+
+Then paste the cleaned output back into your notes.

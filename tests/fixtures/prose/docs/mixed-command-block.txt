@@ -1,0 +1,8 @@
+To run the focused test from the docs,
+use this command:
+
+cargo test \
+  --test clipboard_flow
+
+This keeps the output narrow enough to
+inspect in one pass.

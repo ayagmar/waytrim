@@ -105,3 +105,23 @@ fn prose_repairs_wrapped_pi_inline_code_bullets_fixture() {
     assert!(meta.preserve.iter().any(|value| value == "inline code"));
     assert_eq!(output, fixture_output("prose/pi/pi-inline-code-bullets"));
 }
+
+#[test]
+fn prose_preserves_mixed_docs_command_block_fixture() {
+    let input = fixture_input("prose/docs/mixed-command-block");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/docs/mixed-command-block");
+
+    assert!(meta.preserve.iter().any(|value| value == "command blocks"));
+    assert_eq!(output, fixture_output("prose/docs/mixed-command-block"));
+}
+
+#[test]
+fn prose_preserves_mixed_pi_command_block_fixture() {
+    let input = fixture_input("prose/pi/mixed-command-block");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/pi/mixed-command-block");
+
+    assert!(meta.preserve.iter().any(|value| value == "command blocks"));
+    assert_eq!(output, fixture_output("prose/pi/mixed-command-block"));
+}

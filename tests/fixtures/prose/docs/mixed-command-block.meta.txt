@@ -1,0 +1,3 @@
+notes: docs prose with standalone command block
+preserve: paragraphs, command blocks
+avoid: command-collapse, transcript-parsing

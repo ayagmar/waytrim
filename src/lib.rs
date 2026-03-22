@@ -93,6 +93,7 @@ fn repair_prose(input: &str) -> String {
     let mut list_item: Option<String> = None;
     let mut active_quote: Option<String> = None;
     let mut in_fenced_code = false;
+    let mut in_command_block = false;
 
     let flush_paragraph = |paragraph: &mut Vec<String>, output_lines: &mut Vec<String>| {
         if paragraph.is_empty() {
@@ -147,12 +148,31 @@ fn repair_prose(input: &str) -> String {
             flush_paragraph(&mut paragraph, &mut output_lines);
             flush_list_item(&mut list_item, &mut output_lines);
             flush_quote(&mut active_quote, &mut output_lines);
+            in_command_block = false;
 
             if output_lines.last().is_none_or(|last| !last.is_empty()) {
                 output_lines.push(String::new());
             }
 
             continue;
+        }
+
+        if !is_list_item_line(trimmed) && looks_like_shell_line(trimmed) {
+            flush_paragraph(&mut paragraph, &mut output_lines);
+            flush_list_item(&mut list_item, &mut output_lines);
+            flush_quote(&mut active_quote, &mut output_lines);
+            in_command_block = true;
+            output_lines.push(line.to_string());
+            continue;
+        }
+
+        if in_command_block {
+            if is_command_block_continuation_line(line) {
+                output_lines.push(line.to_string());
+                continue;
+            }
+
+            in_command_block = false;
         }
 
         if is_list_item_line(trimmed) {
@@ -441,6 +461,13 @@ fn looks_like_shell_line(line: &str) -> bool {
 fn is_command_continuation_line(line: &str) -> bool {
     let trimmed = line.trim();
     trimmed.starts_with('-') || trimmed.starts_with("\\")
+}
+
+fn is_command_block_continuation_line(line: &str) -> bool {
+    let trimmed = line.trim();
+    !trimmed.is_empty()
+        && line.starts_with(char::is_whitespace)
+        && (trimmed.starts_with("--") || trimmed.starts_with("\\"))
 }
 
 fn strip_prompt(line: &str) -> Option<&str> {

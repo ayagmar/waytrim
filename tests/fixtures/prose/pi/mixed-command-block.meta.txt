@@ -1,0 +1,3 @@
+notes: pi reply with wrapped prose around command block
+preserve: paragraphs, command blocks
+avoid: command-collapse, transcript-parsing
