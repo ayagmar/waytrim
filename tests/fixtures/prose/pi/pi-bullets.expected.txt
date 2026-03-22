@@ -1,0 +1,5 @@
+What changed
+
+- Copied assistant output now goes through the shared repair path before it reaches the clipboard.
+- Preview mode stays non-mutating and shows what would be written.
+- Already-clean clipboard text reports success without writing again.

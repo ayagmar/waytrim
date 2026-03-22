@@ -27,3 +27,30 @@ fn command_strips_common_host_prompts() {
 
     assert_eq!(output, fixture_output("command/prompts/host-shell"));
 }
+
+#[test]
+fn command_repairs_pi_multiline_command_fixture() {
+    let input = fixture_input("command/pi/pi-command");
+    let output = run_waytrim(&["command"], &input);
+    let meta = fixture_meta("command/pi/pi-command");
+
+    assert!(meta.preserve.iter().any(|value| value == "shell command"));
+    assert_eq!(output, fixture_output("command/pi/pi-command"));
+}
+
+#[test]
+fn command_preserves_pi_command_plus_output_fixture() {
+    let input = fixture_input("command/negative/pi-command-plus-output");
+    let output = run_waytrim(&["command"], &input);
+    let meta = fixture_meta("command/negative/pi-command-plus-output");
+
+    assert!(
+        meta.preserve
+            .iter()
+            .any(|value| value == "transcript shape")
+    );
+    assert_eq!(
+        output,
+        fixture_output("command/negative/pi-command-plus-output")
+    );
+}

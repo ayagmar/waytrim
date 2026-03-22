@@ -1,0 +1,3 @@
+notes: pi output with fenced code block
+preserve: code blocks
+avoid: prose-merge, command-rewrite

@@ -25,3 +25,14 @@ fn auto_declines_to_merge_label_plus_command_snippets() {
 
     assert_eq!(output, fixture_output("auto/ambiguous/label-plus-command"));
 }
+
+#[test]
+fn auto_declines_to_rewrite_pi_command_plus_output_snippet() {
+    let input = fixture_input("auto/ambiguous/pi-command-plus-output");
+    let output = run_waytrim(&["auto"], &input);
+
+    assert_eq!(
+        output,
+        fixture_output("auto/ambiguous/pi-command-plus-output")
+    );
+}

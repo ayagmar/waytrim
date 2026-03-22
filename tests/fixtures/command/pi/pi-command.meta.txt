@@ -1,0 +1,3 @@
+notes: multiline command copied from terminal-like pi output
+preserve: shell command
+avoid: transcript-parsing

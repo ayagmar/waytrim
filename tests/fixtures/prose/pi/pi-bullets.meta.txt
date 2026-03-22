@@ -1,0 +1,3 @@
+notes: pi tui status bullets with wrapped continuations
+preserve: bullets, status updates
+avoid: markdown-prettify, list-rewrite

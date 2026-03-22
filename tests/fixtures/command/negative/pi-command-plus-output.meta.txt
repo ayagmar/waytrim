@@ -1,0 +1,3 @@
+notes: mixed command and output transcript
+preserve: transcript shape
+avoid: output-stripping

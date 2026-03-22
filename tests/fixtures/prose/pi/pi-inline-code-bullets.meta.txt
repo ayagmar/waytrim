@@ -1,0 +1,3 @@
+notes: wrapped bullets with inline code from pi tui
+preserve: bullets, inline code
+avoid: list-rewrite

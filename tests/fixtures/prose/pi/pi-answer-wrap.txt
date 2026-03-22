@@ -1,0 +1,8 @@
+You probably want to send copied TUI output
+through the same cleanup path used for stdin
+so hard-wrapped assistant replies become
+normal paragraphs again.
+
+If the copied text is already clean, the tool
+should leave it alone and report that
+nothing changed.

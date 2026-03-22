@@ -1,0 +1,3 @@
+$ cargo test
+running 1 test
+test clipboard_flow ... ok

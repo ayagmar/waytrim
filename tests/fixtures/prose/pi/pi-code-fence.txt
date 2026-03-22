@@ -1,0 +1,6 @@
+Use this exactly:
+
+```bash
+pi tui copy --selection last-response
+printf '%s\n' "do not touch fenced code"
+```

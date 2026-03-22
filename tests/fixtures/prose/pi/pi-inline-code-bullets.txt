@@ -1,0 +1,8 @@
+Fix summary
+
+- The `copy output` action should preserve
+  visible list structure.
+- Wrapped lines inside one bullet should be
+  merged into a single bullet item.
+- Inline code like `--clipboard --preview`
+  should remain unchanged.

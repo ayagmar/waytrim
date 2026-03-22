@@ -1,0 +1,3 @@
+notes: numbered instructions copied from pi tui
+preserve: numbered lists
+avoid: list-flattening

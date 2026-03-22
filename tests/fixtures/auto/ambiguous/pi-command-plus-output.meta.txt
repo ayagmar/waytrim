@@ -1,0 +1,3 @@
+notes: pi transcript should stay unchanged when auto mode is uncertain
+preserve: transcript shape
+avoid: command-classification overreach

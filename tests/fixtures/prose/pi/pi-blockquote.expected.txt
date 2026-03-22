@@ -1,0 +1,3 @@
+Notes
+
+> The safest fix is to reuse the same text normalization logic for stdin, preview, and clipboard copy so the behavior stays consistent.

@@ -170,3 +170,37 @@ fn clipboard_flow_reports_unchanged_for_fenced_code_fixture() {
 
     assert_eq!(output.status, ClipboardFlowStatus::Unchanged);
 }
+
+#[test]
+fn clipboard_flow_repairs_pi_bullets_fixture_through_prose_mode() {
+    let input = fixture_input("prose/pi/pi-bullets");
+    let expected = fixture_output("prose/pi/pi-bullets");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = CliConfig {
+        mode: Mode::Prose,
+        clipboard: true,
+        preview: false,
+        print: false,
+    };
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Updated);
+    assert_eq!(clipboard.current(), expected);
+}
+
+#[test]
+fn clipboard_flow_reports_unchanged_for_pi_fenced_code_fixture() {
+    let input = fixture_input("prose/pi/pi-code-fence");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = CliConfig {
+        mode: Mode::Prose,
+        clipboard: true,
+        preview: false,
+        print: false,
+    };
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Unchanged);
+}

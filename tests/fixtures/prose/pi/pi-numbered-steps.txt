@@ -1,0 +1,8 @@
+Try this
+
+1. Copy a long answer from the Pi TUI.
+2. Run the copied text through the prose
+   repair path.
+3. Paste the repaired result into your
+   editor and check that the paragraph
+   wrapping is gone.

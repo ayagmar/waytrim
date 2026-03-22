@@ -72,6 +72,10 @@ fn repair_auto(input: &str) -> String {
         return repair_command(input);
     }
 
+    if looks_like_command_transcript(input) {
+        return minimal_prose_safe_cleanup(input);
+    }
+
     if looks_like_label_plus_command(input) {
         return minimal_prose_safe_cleanup(input);
     }
@@ -361,6 +365,24 @@ fn looks_like_prose(input: &str) -> bool {
         .count();
 
     sentence_like >= 1 && lines.iter().all(|line| !looks_like_shell_line(line))
+}
+
+fn looks_like_command_transcript(input: &str) -> bool {
+    let non_empty: Vec<_> = input
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect();
+
+    if non_empty.len() < 2 || strip_prompt(non_empty[0]).is_none() {
+        return false;
+    }
+
+    non_empty[1..].iter().any(|line| {
+        strip_prompt(line).is_none()
+            && !is_command_continuation_line(line)
+            && !looks_like_shell_line(line)
+    })
 }
 
 fn looks_like_command(input: &str) -> bool {
