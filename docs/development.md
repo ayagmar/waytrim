@@ -114,6 +114,14 @@ printf 'This is a wrapped\nparagraph.\n' | cargo run --bin waytrimctl -- repair 
 cargo run --bin waytrimctl -- shutdown
 ```
 
+### Automatic clipboard watcher
+
+```bash
+cargo run --bin waytrim-watch -- auto
+cargo run --bin waytrim-watch -- prose
+cargo run --bin waytrim-watch -- --restore-original
+```
+
 Notes:
 - clipboard mode stays mode-centered
 - `--preview` is non-mutating in clipboard mode
@@ -129,6 +137,7 @@ Notes:
 - when `XDG_RUNTIME_DIR` is missing, the fallback is `${TMPDIR:-/tmp}/waytrim-<uid>/waytrim.sock`
 - the service refuses to remove non-socket paths and refuses startup when another listener already owns the socket
 - `waytrimctl` prints JSON by default and can print only repaired text with `--text`
+- `waytrim-watch` uses `wl-paste --watch` and stores watcher state under the waytrim runtime dir
 
 ## Test and format
 
@@ -150,8 +159,10 @@ src/
   service.rs    local service loop over the repair core
   main.rs       canonical CLI adapter
   bin/
-    waytrimd.rs   daemon entrypoint
-    waytrimctl.rs IPC client entrypoint
+    waytrimd.rs      daemon entrypoint
+    waytrimctl.rs    IPC client entrypoint
+    waytrim-watch.rs automatic clipboard watcher entrypoint
+  watch.rs      watcher state and one-shot clipboard processing
 
 contrib/
   niri/
@@ -160,6 +171,9 @@ contrib/
     waytrim/
       WaytrimClient.qml           Quickshell socket client example
       WaytrimClipboardAction.qml  Quickshell clipboard action example
+  systemd/
+    user/
+      waytrim-watch.service  user service example for always-on clipboard cleanup
 
 tests/
   *.rs          integration tests

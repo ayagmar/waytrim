@@ -11,19 +11,19 @@ use serde::{Deserialize, Serialize};
 use crate::{Mode, RepairPolicy, RepairReport};
 
 pub const IPC_VERSION: u32 = 1;
-const SOCKET_DIR_NAME: &str = "waytrim";
+const RUNTIME_DIR_NAME: &str = "waytrim";
 const SOCKET_FILE_NAME: &str = "waytrim.sock";
 
-pub fn default_socket_path() -> PathBuf {
+pub fn default_runtime_dir() -> PathBuf {
     if let Some(runtime_dir) = env::var_os("XDG_RUNTIME_DIR") {
-        return PathBuf::from(runtime_dir)
-            .join(SOCKET_DIR_NAME)
-            .join(SOCKET_FILE_NAME);
+        return PathBuf::from(runtime_dir).join(RUNTIME_DIR_NAME);
     }
 
-    env::temp_dir()
-        .join(format!("waytrim-{}", fallback_socket_namespace()))
-        .join(SOCKET_FILE_NAME)
+    env::temp_dir().join(format!("waytrim-{}", fallback_socket_namespace()))
+}
+
+pub fn default_socket_path() -> PathBuf {
+    default_runtime_dir().join(SOCKET_FILE_NAME)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

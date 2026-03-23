@@ -113,6 +113,7 @@ The canonical user interface is still `waytrim`.
 For local automation and future desktop integrations, waytrim also ships:
 - `waytrimd` — Unix-socket service exposing the same repair core
 - `waytrimctl` — thin JSON IPC client for the service
+- `waytrim-watch` — automatic clipboard watcher for Wayland
 
 Default socket path:
 - `XDG_RUNTIME_DIR/waytrim/waytrim.sock`
@@ -140,6 +141,21 @@ See `docs/integrations.md` for the JSON contract, service usage, and desktop wor
 cargo test
 cargo fmt --check
 ```
+
+## Automatic clipboard workflow
+
+To keep the clipboard cleaned in the background, run:
+
+```bash
+waytrim-watch auto
+```
+
+Behavior:
+- watches clipboard changes through `wl-paste --watch`
+- repairs new clipboard text through the same core logic
+- defaults to conservative `auto` mode unless CLI mode overrides it
+- uses the existing repair policy surface from config
+- stores the last original clipboard text so you can restore it with `waytrim-watch --restore-original`
 
 ## Manual desktop workflow
 

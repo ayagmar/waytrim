@@ -6,6 +6,7 @@ Current state:
 - canonical human-facing interface: `waytrim`
 - optional local service: `waytrimd`
 - optional JSON IPC client: `waytrimctl`
+- automatic clipboard watcher: `waytrim-watch`
 - manual Niri/Wayland helper: `contrib/niri/waytrim-clipboard-prose`
 - Quickshell example client: `contrib/quickshell/waytrim/`
 
@@ -116,6 +117,40 @@ Stop the service:
 
 ```bash
 cargo run --bin waytrimctl -- shutdown
+```
+
+## Automatic clipboard watcher
+
+Run the watcher directly:
+
+```bash
+waytrim-watch auto
+waytrim-watch prose
+waytrim-watch --restore-original
+```
+
+Behavior:
+- uses `wl-paste --watch` to react to clipboard changes
+- repairs clipboard text through the same Rust core
+- keeps the last original clipboard text in watcher state for `--restore-original`
+- keeps all cleanup logic out of the watcher itself
+
+Example systemd user service:
+- `contrib/systemd/user/waytrim-watch.service`
+
+Suggested install:
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp /path/to/waytrim/contrib/systemd/user/waytrim-watch.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now waytrim-watch.service
+```
+
+If your graphical session does not already export Wayland environment variables into user services, import them before enabling the service:
+
+```bash
+systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR
 ```
 
 ## Manual Niri workflow

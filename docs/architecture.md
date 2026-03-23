@@ -94,6 +94,7 @@ The test layout mirrors the product boundary:
 These stay outside the core:
 
 - manual clipboard-clean action
+- automatic clipboard watcher lifecycle
 - Wayland clipboard adapter
 - local daemon/service lifecycle
 - IPC transport layer
