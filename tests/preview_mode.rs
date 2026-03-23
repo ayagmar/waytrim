@@ -88,3 +88,33 @@ fn preview_reports_no_changes_for_indented_block_fixture() {
     assert!(output.contains("+++ after"));
     assert!(output.contains("(no changes)"));
 }
+
+#[test]
+fn preview_shows_spacing_noise_wrap_changes() {
+    let input = fixture_input("prose/ai-terminal/spacing-noise-wrap");
+    let output = run_waytrim(&["prose", "--preview"], &input);
+
+    assert!(output.contains("--- before"));
+    assert!(output.contains("+++ after"));
+    assert!(output.contains("+This copied answer came from a narrow pane and picked up extra spaces between words that should be normalized without changing meaning."));
+}
+
+#[test]
+fn preview_shows_heading_padding_repair() {
+    let input = fixture_input("prose/ai-terminal/heading-padding");
+    let output = run_waytrim(&["prose", "--preview"], &input);
+
+    assert!(output.contains("--- before"));
+    assert!(output.contains("+++ after"));
+    assert!(output.contains("+## Clipboard workflow"));
+}
+
+#[test]
+fn preview_reports_no_changes_for_install_section_fixture() {
+    let input = fixture_input("auto/ambiguous/install-section");
+    let output = run_waytrim(&["auto", "--preview"], &input);
+
+    assert!(output.contains("--- before"));
+    assert!(output.contains("+++ after"));
+    assert!(output.contains("(no changes)"));
+}

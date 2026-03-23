@@ -1,0 +1,3 @@
+notes: ai terminal paragraph with useless blank-line noise
+preserve: paragraphs
+avoid: rewrite, section-merging

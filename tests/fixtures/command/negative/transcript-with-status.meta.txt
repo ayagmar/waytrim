@@ -1,0 +1,3 @@
+notes: command transcript with test output
+preserve: transcript shape
+avoid: transcript-parsing, prompt stripping

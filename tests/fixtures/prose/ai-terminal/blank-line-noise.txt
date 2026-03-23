@@ -1,0 +1,5 @@
+This copied response wrapped badly
+
+and inserted blank lines
+
+inside one paragraph.

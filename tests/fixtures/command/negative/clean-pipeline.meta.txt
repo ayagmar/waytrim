@@ -1,0 +1,3 @@
+notes: already clean shell pipeline
+preserve: shell command
+avoid: rewrite

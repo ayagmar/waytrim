@@ -1,0 +1,3 @@
+notes: prose-framed install command example
+preserve: prose framing, command examples
+avoid: forced classification, command merging

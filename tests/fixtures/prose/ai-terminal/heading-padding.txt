@@ -1,0 +1,3 @@
+##   Clipboard workflow
+
+Use preview mode before mutating copied text.

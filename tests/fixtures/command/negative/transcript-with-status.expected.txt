@@ -1,0 +1,3 @@
+$ cargo test --test clipboard_flow
+running 3 tests
+test clipboard_flow_reports_unchanged_text_as_success ... ok

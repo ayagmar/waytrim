@@ -67,3 +67,43 @@ fn command_leaves_already_clean_command_fixture_unchanged() {
         fixture_output("command/negative/already-clean-command")
     );
 }
+
+#[test]
+fn command_leaves_clean_pipeline_fixture_unchanged() {
+    let input = fixture_input("command/negative/clean-pipeline");
+    let output = run_waytrim(&["command"], &input);
+    let meta = fixture_meta("command/negative/clean-pipeline");
+
+    assert!(meta.avoid.iter().any(|value| value == "rewrite"));
+    assert_eq!(output, fixture_output("command/negative/clean-pipeline"));
+}
+
+#[test]
+fn command_preserves_transcript_with_status_fixture() {
+    let input = fixture_input("command/negative/transcript-with-status");
+    let output = run_waytrim(&["command"], &input);
+    let meta = fixture_meta("command/negative/transcript-with-status");
+
+    assert!(
+        meta.preserve
+            .iter()
+            .any(|value| value == "transcript shape")
+    );
+    assert_eq!(
+        output,
+        fixture_output("command/negative/transcript-with-status")
+    );
+}
+
+#[test]
+fn command_preserves_host_prompt_plus_output_fixture() {
+    let input = fixture_input("command/negative/host-prompt-plus-output");
+    let output = run_waytrim(&["command"], &input);
+    let meta = fixture_meta("command/negative/host-prompt-plus-output");
+
+    assert!(meta.avoid.iter().any(|value| value == "transcript-parsing"));
+    assert_eq!(
+        output,
+        fixture_output("command/negative/host-prompt-plus-output")
+    );
+}

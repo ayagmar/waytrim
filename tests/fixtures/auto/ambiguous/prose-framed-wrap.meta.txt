@@ -1,0 +1,3 @@
+notes: ambiguous wrapped prose with explicit prose-preferred opt-in
+preserve: prose meaning
+avoid: forced command classification

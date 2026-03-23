@@ -227,6 +227,14 @@ fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<ExplainStep>
         }
 
         if trimmed.is_empty() {
+            if paragraph.last().is_some_and(|previous| {
+                lines.peek().is_some_and(|(_, next)| {
+                    should_collapse_blank_line_between(previous, next.trim_end())
+                })
+            }) {
+                continue;
+            }
+
             flush_paragraph(
                 &mut paragraph,
                 &mut paragraph_start_line,
@@ -390,7 +398,7 @@ fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<ExplainStep>
                 &mut output_lines,
                 &mut explain,
             );
-            output_lines.push(line.to_string());
+            output_lines.push(normalize_heading_padding(line));
             continue;
         }
 
@@ -715,7 +723,7 @@ fn looks_like_command(input: &str) -> bool {
 
 fn looks_like_shell_line(line: &str) -> bool {
     let trimmed = line.trim();
-    if trimmed.is_empty() {
+    if trimmed.is_empty() || trimmed.contains('`') {
         return false;
     }
 
@@ -858,6 +866,41 @@ fn is_numbered_line(trimmed: &str) -> bool {
     }
 
     matches!(chars.next(), Some('.') | Some(')')) && matches!(chars.next(), Some(' '))
+}
+
+fn should_collapse_blank_line_between(previous: &str, next: &str) -> bool {
+    let previous = previous.trim();
+    let next = next.trim();
+
+    previous.contains(' ')
+        && next.contains(' ')
+        && next
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_ascii_lowercase())
+        && !matches!(previous.chars().last(), Some('.' | '!' | '?' | ':'))
+        && !is_protected_line(previous)
+        && !is_protected_line(next)
+        && !looks_like_shell_line(previous)
+        && !looks_like_shell_line(next)
+        && !looks_like_aligned_columns_line(previous)
+        && !looks_like_aligned_columns_line(next)
+}
+
+fn normalize_heading_padding(line: &str) -> String {
+    let trimmed = line.trim();
+    let marker_len = trimmed.chars().take_while(|ch| *ch == '#').count();
+
+    if marker_len == 0 {
+        return line.to_string();
+    }
+
+    let rest = &trimmed[marker_len..];
+    if rest.is_empty() || !rest.starts_with(char::is_whitespace) {
+        return line.to_string();
+    }
+
+    format!("{} {}", "#".repeat(marker_len), rest.trim())
 }
 
 fn normalize_inline_spacing(line: &str) -> String {

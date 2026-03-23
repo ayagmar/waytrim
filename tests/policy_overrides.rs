@@ -1,3 +1,6 @@
+mod support;
+
+use support::{fixture_input, fixture_output};
 use waytrim::{AutoPolicy, Mode, RepairPolicy, repair_with_policy};
 
 #[test]
@@ -45,5 +48,21 @@ fn auto_can_choose_prose_for_ambiguous_wrapped_text_when_policy_is_prose_preferr
     assert_eq!(
         result.output,
         "This copied answer came from a narrow pane and lost its paragraph shape but the conservative auto policy should wait for an explicit prose preference\n"
+    );
+}
+
+#[test]
+fn auto_prose_preferred_can_repair_prose_framed_wrap_fixture() {
+    let input = fixture_input("auto/ambiguous/prose-framed-wrap");
+    let policy = RepairPolicy {
+        auto_policy: AutoPolicy::ProsePreferred,
+        ..RepairPolicy::default()
+    };
+
+    let result = repair_with_policy(&input, Mode::Auto, &policy);
+
+    assert_eq!(
+        result.output,
+        fixture_output("auto/ambiguous/prose-framed-wrap")
     );
 }

@@ -104,3 +104,51 @@ fn auto_keeps_prose_preferred_fixture_unchanged_when_conservative() {
         fixture_output("auto/ambiguous/prose-preferred-wrap")
     );
 }
+
+#[test]
+fn auto_declines_to_merge_prose_then_command_example_fixture() {
+    let input = fixture_input("auto/ambiguous/prose-then-command-example");
+    let output = run_waytrim(&["auto"], &input);
+    let meta = support::fixture_meta("auto/ambiguous/prose-then-command-example");
+
+    assert!(
+        meta.avoid
+            .iter()
+            .any(|value| value == "forced classification")
+    );
+    assert_eq!(
+        output,
+        fixture_output("auto/ambiguous/prose-then-command-example")
+    );
+}
+
+#[test]
+fn auto_declines_to_merge_install_section_fixture() {
+    let input = fixture_input("auto/ambiguous/install-section");
+    let output = run_waytrim(&["auto"], &input);
+    let meta = support::fixture_meta("auto/ambiguous/install-section");
+
+    assert!(
+        meta.avoid
+            .iter()
+            .any(|value| value == "forced classification")
+    );
+    assert_eq!(output, fixture_output("auto/ambiguous/install-section"));
+}
+
+#[test]
+fn auto_declines_to_rewrite_indented_command_example_fixture() {
+    let input = fixture_input("auto/ambiguous/indented-command-example");
+    let output = run_waytrim(&["auto"], &input);
+    let meta = support::fixture_meta("auto/ambiguous/indented-command-example");
+
+    assert!(
+        meta.preserve
+            .iter()
+            .any(|value| value == "command examples")
+    );
+    assert_eq!(
+        output,
+        fixture_output("auto/ambiguous/indented-command-example")
+    );
+}

@@ -179,3 +179,70 @@ fn prose_preserves_options_table_fixture() {
     assert!(meta.preserve.iter().any(|value| value == "aligned columns"));
     assert_eq!(output, fixture_output("prose/docs/options-table"));
 }
+
+#[test]
+fn prose_collapses_useless_blank_lines_inside_wrapped_paragraph_fixture() {
+    let input = fixture_input("prose/ai-terminal/blank-line-noise");
+    let output = run_waytrim(&["prose"], &input);
+
+    assert_eq!(output, fixture_output("prose/ai-terminal/blank-line-noise"));
+}
+
+#[test]
+fn prose_preserves_real_section_break_fixture() {
+    let input = fixture_input("prose/negative/section-break");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/negative/section-break");
+
+    assert!(meta.preserve.iter().any(|value| value == "section breaks"));
+    assert_eq!(output, fixture_output("prose/negative/section-break"));
+}
+
+#[test]
+fn prose_trims_excessive_heading_padding_fixture() {
+    let input = fixture_input("prose/ai-terminal/heading-padding");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/ai-terminal/heading-padding");
+
+    assert!(meta.preserve.iter().any(|value| value == "headings"));
+    assert_eq!(output, fixture_output("prose/ai-terminal/heading-padding"));
+}
+
+#[test]
+fn prose_repairs_ai_terminal_spacing_noise_fixture() {
+    let input = fixture_input("prose/ai-terminal/spacing-noise-wrap");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/ai-terminal/spacing-noise-wrap");
+
+    assert!(meta.avoid.iter().any(|value| value == "rewrite"));
+    assert_eq!(
+        output,
+        fixture_output("prose/ai-terminal/spacing-noise-wrap")
+    );
+}
+
+#[test]
+fn prose_repairs_ai_terminal_inline_code_followup_fixture() {
+    let input = fixture_input("prose/ai-terminal/inline-code-followup");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/ai-terminal/inline-code-followup");
+
+    assert!(meta.preserve.iter().any(|value| value == "inline code"));
+    assert_eq!(
+        output,
+        fixture_output("prose/ai-terminal/inline-code-followup")
+    );
+}
+
+#[test]
+fn prose_repairs_copy_induced_spacing_noise_inside_paragraph_fixture() {
+    let input = fixture_input("prose/ai-terminal/spacing-noise-paragraph");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/ai-terminal/spacing-noise-paragraph");
+
+    assert!(meta.avoid.iter().any(|value| value == "rewrite"));
+    assert_eq!(
+        output,
+        fixture_output("prose/ai-terminal/spacing-noise-paragraph")
+    );
+}

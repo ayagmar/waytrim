@@ -1,0 +1,3 @@
+notes: ai terminal wrapped paragraph with copy-induced spacing noise
+preserve: paragraphs
+avoid: rewrite, reflow

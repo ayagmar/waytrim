@@ -1,0 +1,3 @@
+notes: real section breaks that should stay separated
+preserve: section breaks
+avoid: paragraph-merging, rewrite

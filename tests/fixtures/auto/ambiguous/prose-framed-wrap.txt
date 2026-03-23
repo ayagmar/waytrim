@@ -1,0 +1,3 @@
+This answer came from a narrow terminal pane
+and should stay conservative in default auto
+but repair cleanly when prose-preferred is chosen.

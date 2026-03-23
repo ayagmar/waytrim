@@ -30,7 +30,7 @@ The CLI reads from stdin and writes cleaned text to stdout by default. `--previe
 
 ### `prose`
 - primary mode
-- repairs wrapped paragraphs and copy-induced spacing noise
+- repairs wrapped paragraphs, copy-induced spacing noise, obvious blank-line noise inside one paragraph, and copy-induced heading padding
 - preserves visible structure such as bullets, headings, blockquotes, fenced code blocks, indented sections, alignment-sensitive / table-ish text, and obvious standalone command blocks inside mixed prose snippets
 - repairs obvious wrapped blockquotes while leaving fenced code, aligned columns, and standalone command blocks untouched
 
@@ -39,12 +39,13 @@ The CLI reads from stdin and writes cleaned text to stdout by default. `--previe
 - strips obvious prompts and repairs command presentation damage
 - handles bare prompts and common host-style shell prompts conservatively
 - leaves already-clean shell commands unchanged
-- leaves mixed command/output snippets unchanged unless the command shape is obvious
+- leaves transcript-shaped or mixed command/output snippets unchanged unless the command shape is obvious
 
 ### `auto`
 - conservative convenience mode
 - chooses command cleanup when the input is clearly command-like
 - declines to merge short label-plus-command snippets such as `Install command:` followed by a command
+- declines prose-framed command examples and install sections such as `Run this:` or `Install command:` plus a command block
 - stays conservative on mixed prose-plus-command snippets and falls back to minimal prose-safe cleanup
 - otherwise prefers prose repair or minimal prose-safe cleanup
 
@@ -122,19 +123,19 @@ cargo fmt --check
 Fixtures live under `tests/fixtures/` and are organized by mode first, then source/type. Metadata files (`*.meta.txt`) capture notes plus lightweight `preserve` and `avoid` rules so heuristics stay aligned with the product boundary.
 
 Current corpus coverage includes:
-- AI-terminal wrapped prose
+- AI-terminal wrapped prose, spacing-noise wraps, wrapped inline-code followups, spacing-noise paragraphs, blank-line noise, and heading-padding cleanup
 - TUI status-update bullets
 - PI/TUI wrapped prose paragraphs
 - PI/TUI wrapped bullet and numbered-list continuations
 - wrapped doc and PI blockquotes
 - mixed doc and PI prose with preserved standalone command blocks
 - alignment-sensitive / table-ish text, including docs option tables, that prose should preserve by default
-- already-clean prose that should remain unchanged
+- already-clean prose that should remain unchanged, including real section-break cases
 - heading and indented-section no-op cases that prose should preserve
 - fenced-code preservation cases, including PI output
 - bare and host-style shell prompts
-- already-clean shell commands that should remain unchanged
+- already-clean shell commands that should remain unchanged, including clean pipeline commands
 - multiline PI command cleanup
-- mixed command/output transcripts that should stay unchanged
-- ambiguous label-plus-command, transcript-like, mixed prose-command, aligned-columns, and prose-preferred auto snippets that `auto` should leave alone under the conservative default
-- unchanged preview and clipboard no-op cases for safe inputs, including command-mode clipboard/transcript paths and heading/indented prose fixtures
+- mixed command/output transcripts that should stay unchanged, including transcript-with-status and host-prompt-plus-output captures
+- ambiguous label-plus-command, transcript-like, mixed prose-command, prose-then-command-example, install-section, indented-command-example, aligned-columns, prose-preferred, and prose-framed-wrap auto snippets that `auto` should leave alone under the conservative default unless policy opts into prose-preferred repair
+- unchanged preview and clipboard no-op cases for safe inputs, including command-mode clipboard/transcript paths, clean command no-op fixtures, install-section no-op cases, and heading/indented prose fixtures

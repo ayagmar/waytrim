@@ -1,0 +1,3 @@
+Use `waytrim prose --preview` first if you want
+to inspect the change before writing the cleaned
+text back to the clipboard.

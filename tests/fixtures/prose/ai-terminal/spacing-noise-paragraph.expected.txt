@@ -1,0 +1,1 @@
+This copied reply came from a terminal pane and kept extra spacing that should collapse back to a normal paragraph without changing wording.

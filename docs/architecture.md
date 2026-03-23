@@ -58,11 +58,11 @@ Primary mode for repairing wrapped terminal-origin prose and copy-induced spacin
 
 ### Command
 
-Bounded mode for copied command presentation cleanup. It strips obvious prompts and repairs line continuations without trying to become a shell interpreter.
+Bounded mode for copied command presentation cleanup. It strips obvious prompts and repairs line continuations without trying to become a shell interpreter. Transcript-shaped snippets stay unchanged by default.
 
 ### Auto
 
-Conservative convenience mode. It chooses a clear mode when confidence is high and otherwise falls back to minimal prose-safe cleanup.
+Conservative convenience mode. It chooses a clear mode when confidence is high and otherwise falls back to minimal prose-safe cleanup. Prose-framed command examples and install sections stay unchanged by default unless the user explicitly opts into a more prose-friendly policy.
 
 ## Testing strategy
 

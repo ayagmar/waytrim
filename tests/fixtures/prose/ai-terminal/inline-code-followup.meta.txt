@@ -1,0 +1,3 @@
+notes: ai terminal prose with inline code, wrapped paragraph
+preserve: paragraphs, inline code
+avoid: rewrite, markdown-prettify

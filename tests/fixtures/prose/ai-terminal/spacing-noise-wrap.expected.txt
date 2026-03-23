@@ -1,0 +1,1 @@
+This copied answer came from a narrow pane and picked up extra spaces between words that should be normalized without changing meaning.

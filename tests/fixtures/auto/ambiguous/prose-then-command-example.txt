@@ -1,0 +1,4 @@
+To rerun only the clipboard flow checks, use:
+
+cargo test \
+  --test clipboard_flow

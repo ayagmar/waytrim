@@ -1,0 +1,7 @@
+Summary
+
+The clipboard path stays conservative.
+
+Next step
+
+Add a regression fixture before changing heuristics.

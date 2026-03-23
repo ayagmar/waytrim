@@ -1,0 +1,2 @@
+ayagmar@archbox:~/projects/waytrim$ cargo test --test command_mode
+Finished test [unoptimized + debuginfo] target(s) in 0.21s

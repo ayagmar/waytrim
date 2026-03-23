@@ -1,0 +1,3 @@
+notes: ai terminal heading with copy-induced extra padding
+preserve: headings
+avoid: heading-rewrite, reflow

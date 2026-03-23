@@ -1,0 +1,1 @@
+cargo test --test clipboard_flow | rg updated

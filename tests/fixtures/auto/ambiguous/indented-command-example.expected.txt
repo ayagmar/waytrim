@@ -1,0 +1,4 @@
+Run this after copying the output:
+
+  cargo test \
+    --test clipboard_flow

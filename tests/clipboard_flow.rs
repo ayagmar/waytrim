@@ -313,3 +313,40 @@ fn clipboard_flow_uses_policy_from_resolved_config() {
         "This copied answer came from a narrow pane and lost its paragraph shape but the conservative auto policy should wait for an explicit prose preference\n"
     );
 }
+
+#[test]
+fn clipboard_flow_reports_unchanged_for_clean_pipeline_fixture() {
+    let input = fixture_input("command/negative/clean-pipeline");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = clipboard_config(Mode::Command);
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Unchanged);
+    assert!(clipboard.writes().is_empty());
+}
+
+#[test]
+fn clipboard_flow_repairs_heading_padding_fixture() {
+    let input = fixture_input("prose/ai-terminal/heading-padding");
+    let expected = fixture_output("prose/ai-terminal/heading-padding");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = clipboard_config(Mode::Prose);
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Updated);
+    assert_eq!(clipboard.current(), expected);
+}
+
+#[test]
+fn clipboard_flow_auto_mode_preserves_install_section_fixture() {
+    let input = fixture_input("auto/ambiguous/install-section");
+    let clipboard = MemoryClipboard::new(&input);
+    let config = clipboard_config(Mode::Auto);
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Unchanged);
+    assert!(clipboard.writes().is_empty());
+}
