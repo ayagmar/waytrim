@@ -16,6 +16,12 @@ install -Dm755 target/release/waytrimctl ~/.local/bin/waytrimctl
 install -Dm755 target/release/waytrimd ~/.local/bin/waytrimd
 ```
 
+For local rebuild + reinstall during development:
+
+```bash
+./scripts/reinstall-local
+```
+
 Repair wrapped prose from stdin:
 
 ```bash

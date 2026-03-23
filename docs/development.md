@@ -146,6 +146,16 @@ Notes:
 - `--clean-once` is the public one-shot manual override and still uses the Rust watcher logic
 - `--status --json` is the intended machine-readable status surface for Quickshell / Noctalia polling
 
+## Local reinstall helper
+
+To rebuild, reinstall to `~/.local/bin`, refresh the shipped user service files, and restart `waytrim-watch@auto.service` when it is enabled or already running:
+
+```bash
+./scripts/reinstall-local
+```
+
+You can override the install root with `WAYTRIM_INSTALL_ROOT=/some/prefix`.
+
 ## Test and format
 
 ```bash
