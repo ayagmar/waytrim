@@ -154,7 +154,11 @@ It just forwards to:
 waytrim prose --clipboard
 ```
 
-See `docs/integrations.md` for example Niri binds and the future Quickshell / Noctalia direction.
+For Quickshell / Noctalia-oriented integration examples, see:
+- `contrib/quickshell/waytrim/WaytrimClient.qml`
+- `contrib/quickshell/waytrim/WaytrimClipboardAction.qml`
+
+See `docs/integrations.md` for Niri setup and the Quickshell / Noctalia integration examples.
 
 ## Fixtures
 

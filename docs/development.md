@@ -156,6 +156,10 @@ src/
 contrib/
   niri/
     waytrim-clipboard-prose  thin helper for mode-centered clipboard cleanup
+  quickshell/
+    waytrim/
+      WaytrimClient.qml           Quickshell socket client example
+      WaytrimClipboardAction.qml  Quickshell clipboard action example
 
 tests/
   *.rs          integration tests

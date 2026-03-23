@@ -7,6 +7,7 @@ Current state:
 - optional local service: `waytrimd`
 - optional JSON IPC client: `waytrimctl`
 - manual Niri/Wayland helper: `contrib/niri/waytrim-clipboard-prose`
+- Quickshell example client: `contrib/quickshell/waytrim/`
 
 ## Core service contract
 
@@ -149,12 +150,79 @@ binds {
 4. Reload Niri, copy wrapped text, then press `Mod+Shift+v` to repair the current clipboard in place.
 5. Use `Mod+Shift+Ctrl+v` when you want the same flow plus stdout output for debugging.
 
-## Quickshell / Noctalia direction
+## Quickshell / Noctalia
 
-The intended Quickshell path is:
+Example files:
+- `contrib/quickshell/waytrim/WaytrimClient.qml`
+- `contrib/quickshell/waytrim/WaytrimClipboardAction.qml`
+
+These examples talk to the Unix socket directly through Quickshell's `Socket` type.
+They do not re-implement repair logic.
+
+### What the example gives you
+
+- `WaytrimClient.qml`
+  - sends `repair` requests to the local socket
+  - parses the JSON response
+  - exposes typed last-result fields such as `lastOutput`, `lastChanged`, `lastEffectiveMode`, and `lastDecision`
+- `WaytrimClipboardAction.qml`
+  - reads `Quickshell.clipboardText`
+  - sends it through `WaytrimClient`
+  - writes repaired text back only when the report says it changed
+  - reports `updated`, `unchanged`, `empty`, or `error`
+
+### Quickshell setup
+
+Because Quickshell root-relative imports only work inside the shell directory, copy the example folder into your shell config, for example:
+
+```bash
+mkdir -p ~/.config/quickshell/waytrim
+cp /path/to/waytrim/contrib/quickshell/waytrim/*.qml ~/.config/quickshell/waytrim/
+```
+
+Then import it from your shell config:
+
+```qml
+import QtQuick
+import Quickshell
+import qs.waytrim
+```
+
+### Minimal clipboard action example
+
+```qml
+import QtQuick
+import Quickshell
+import qs.waytrim
+
+QtObject {
+    id: root
+
+    WaytrimClipboardAction {
+        id: repairClipboard
+
+        onFinished: (status, message) => {
+            console.log(`waytrim: ${status}: ${message}`)
+        }
+    }
+
+    function repairNow() {
+        repairClipboard.trigger()
+    }
+}
+```
+
+### Socket path note
+
+`WaytrimClient.qml` auto-fills `socketPath` only when `XDG_RUNTIME_DIR` is available.
+If your service is using an explicit or fallback socket path, set `socketPath` yourself in QML.
+
+### Noctalia direction
+
+The intended Noctalia path is:
 1. keep all repair logic in the Rust core
-2. call `waytrimctl` or the Unix socket directly
-3. consume the JSON `report`
-4. let Quickshell decide UI, notifications, and Noctalia workflow behavior
+2. let Quickshell or Noctalia call the local socket contract
+3. branch on the response `status`
+4. use `report.changed`, `report.output`, `report.effective_mode`, and `report.decision` for UI and workflow behavior
 
 That keeps Quickshell and Noctalia as thin UI adapters over a stable local contract instead of re-implementing heuristics.
