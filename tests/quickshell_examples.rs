@@ -26,3 +26,28 @@ fn quickshell_clipboard_action_example_exists_and_uses_quickshell_clipboard() {
     assert!(contents.contains("clipboard updated"));
     assert!(contents.contains("clipboard unchanged"));
 }
+
+#[test]
+fn quickshell_watch_control_example_exists_and_stays_thin() {
+    let contents = fs::read_to_string(quickshell_example_path("WaytrimWatchControl.qml"))
+        .expect("read WaytrimWatchControl.qml");
+
+    assert!(contents.contains("Process {"));
+    assert!(contents.contains("waytrim-watch"));
+    assert!(contents.contains("systemctl"));
+    assert!(contents.contains("function toggle()"));
+    assert!(contents.contains("function restoreOriginal()"));
+    assert!(contents.contains("function cleanOnce(nextMode)"));
+}
+
+#[test]
+fn quickshell_notification_example_exists_and_defaults_to_conservative_popups() {
+    let contents = fs::read_to_string(quickshell_example_path("WaytrimNotifications.qml"))
+        .expect("read WaytrimNotifications.qml");
+
+    assert!(contents.contains("notificationRequested"));
+    assert!(contents.contains("notifyOnUpdated: false"));
+    assert!(contents.contains("notifyOnUnchanged: false"));
+    assert!(contents.contains("notifyOnRestoredOriginal: true"));
+    assert!(contents.contains("notifyOnError: true"));
+}

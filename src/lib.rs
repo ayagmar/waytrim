@@ -14,6 +14,8 @@ pub use core::{
 pub use ipc::{IPC_VERSION, IpcRequest, IpcResponse, default_runtime_dir, default_socket_path};
 pub use service::{ServiceConfig, run_service};
 pub use watch::{
-    AutoClipboardConfig, AutoClipboardOutput, AutoClipboardStatus, WatchPaths,
-    restore_last_original, run_auto_clipboard_once,
+    AutoClipboardConfig, AutoClipboardOutput, AutoClipboardStatus, WatchClipboardSource,
+    WatchEventStatus, WatchPaths, WatchStatusSnapshot, read_watch_status, record_watch_error,
+    restore_last_original, run_auto_clipboard_once, run_manual_clipboard_once,
+    write_watch_idle_status,
 };
