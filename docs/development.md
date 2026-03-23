@@ -119,7 +119,11 @@ cargo run --bin waytrimctl -- shutdown
 ```bash
 cargo run --bin waytrim-watch -- auto
 cargo run --bin waytrim-watch -- prose
+cargo run --bin waytrim-watch -- command
+cargo run --bin waytrim-watch -- auto --clean-once
 cargo run --bin waytrim-watch -- --restore-original
+cargo run --bin waytrim-watch -- --status
+cargo run --bin waytrim-watch -- --status --json
 ```
 
 Notes:
@@ -138,12 +142,16 @@ Notes:
 - the service refuses to remove non-socket paths and refuses startup when another listener already owns the socket
 - `waytrimctl` prints JSON by default and can print only repaired text with `--text`
 - `waytrim-watch` uses `wl-paste --watch` and stores watcher state under the waytrim runtime dir
+- watcher state now carries the last mode, last status message, restore availability, clipboard source, and event id for thin desktop adapters
+- `--clean-once` is the public one-shot manual override and still uses the Rust watcher logic
+- `--status --json` is the intended machine-readable status surface for Quickshell / Noctalia polling
 
 ## Test and format
 
 ```bash
 cargo fmt --check
 cargo test
+cargo clippy --all-targets --all-features -- -D warnings
 ```
 
 ## Repository layout
@@ -167,13 +175,17 @@ src/
 contrib/
   niri/
     waytrim-clipboard-prose  thin helper for mode-centered clipboard cleanup
+    waytrim-watch-session    thin helper for importing session env and restarting enabled watcher units
   quickshell/
     waytrim/
       WaytrimClient.qml           Quickshell socket client example
       WaytrimClipboardAction.qml  Quickshell clipboard action example
+      WaytrimWatchControl.qml     Quickshell/systemd watcher control example
+      WaytrimNotifications.qml    Optional watcher notification bridge
   systemd/
     user/
-      waytrim-watch.service  user service example for always-on clipboard cleanup
+      waytrim-watch.service   fixed auto-mode user service example
+      waytrim-watch@.service  templated user service example for mode switching
 
 tests/
   *.rs          integration tests
@@ -183,7 +195,9 @@ tests/
 docs/
   architecture.md
   development.md
+  getting-started.md
   integrations.md
+  troubleshooting.md
 ```
 
 ## Notes

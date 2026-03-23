@@ -123,8 +123,16 @@ fn parse_mode(value: &str) -> Result<Mode, String> {
 }
 
 fn print_help() {
-    println!("waytrimctl repair prose");
-    println!("waytrimctl repair command --socket /path/to/waytrim.sock");
-    println!("waytrimctl repair auto --text");
-    println!("waytrimctl shutdown");
+    println!("waytrimctl");
+    println!("talk to a local waytrimd socket");
+    println!();
+    println!("Usage:");
+    println!("  waytrimctl repair prose");
+    println!("  waytrimctl repair command --socket /path/to/waytrim.sock");
+    println!("  waytrimctl repair auto --text");
+    println!("  waytrimctl shutdown");
+    println!();
+    println!("Output:");
+    println!("  repair prints JSON by default");
+    println!("  repair --text prints only repaired text");
 }

@@ -68,7 +68,7 @@ The local automation layer is also intentionally thin:
 
 ### Prose
 
-Primary mode for repairing wrapped terminal-origin prose and copy-induced spacing noise while preserving structure.
+Primary mode for repairing wrapped terminal-origin prose, copy-induced spacing noise, and light line-edge padding noise while preserving structure.
 
 ### Command
 
@@ -101,6 +101,6 @@ These stay outside the core:
 - Quickshell / Noctalia integration
 - Niri-oriented keybind workflows
 
-Those layers should call the same core repair contracts rather than introducing separate cleanup logic. The current repo now includes the local service and IPC slice; Quickshell / Noctalia and Niri-specific UX remain delivery-layer work on top of that contract.
+Those layers should call the same core repair contracts rather than introducing separate cleanup logic. The current repo now includes the local service and IPC slice plus watcher-state status snapshots; Quickshell / Noctalia and Niri-specific UX remain delivery-layer work on top of those contracts.
 
-For the manual clipboard slice, `--preview` and `--explain` must remain non-mutating, `--print` must have explicit semantics, and `clipboard unchanged` should be treated as a first-class successful outcome. Missing user config should be silent, invalid user config should warn and fall back to built-in defaults, and explicit CLI flags should always win over file config.
+For the manual clipboard slice, `--preview` and `--explain` must remain non-mutating, `--print` must have explicit semantics, and `clipboard unchanged` should be treated as a first-class successful outcome. For always-on clipboard use, the watcher owns one original clipboard backup, exposes status through Rust-managed watcher state, and keeps manual override behavior such as `--clean-once` and `--restore-original` out of QML. Missing user config should be silent, invalid user config should warn and fall back to built-in defaults, and explicit CLI flags should always win over file config.

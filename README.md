@@ -4,6 +4,31 @@ waytrim is a Linux-native text repair tool for copy/display damage from terminal
 
 It is a repair tool, not a rewrite tool.
 
+## Getting started
+
+Repair wrapped prose from stdin:
+
+```bash
+printf 'This is a wrapped\nparagraph.\n' | waytrim prose
+```
+
+Repair the current clipboard in place:
+
+```bash
+waytrim prose --clipboard
+```
+
+Run the conservative Wayland watcher:
+
+```bash
+waytrim-watch auto
+```
+
+Further guides:
+- `docs/getting-started.md`
+- `docs/integrations.md`
+- `docs/troubleshooting.md`
+
 ## Current CLI
 
 ```bash
@@ -129,17 +154,20 @@ The IPC response carries a stable machine-readable report with:
 
 See `docs/integrations.md` for the JSON contract, service usage, and desktop workflow examples.
 
-## Development docs
+## Documentation
 
+- `docs/getting-started.md`
+- `docs/integrations.md`
+- `docs/troubleshooting.md`
 - `docs/architecture.md`
 - `docs/development.md`
-- `docs/integrations.md`
 
 ## Testing
 
 ```bash
-cargo test
 cargo fmt --check
+cargo test
+cargo clippy --all-targets --all-features -- -D warnings
 ```
 
 ## Automatic clipboard workflow
@@ -148,6 +176,16 @@ To keep the clipboard cleaned in the background, run:
 
 ```bash
 waytrim-watch auto
+waytrim-watch prose
+```
+
+Other watcher commands:
+
+```bash
+waytrim-watch --clean-once auto
+waytrim-watch --restore-original
+waytrim-watch --status
+waytrim-watch --status --json
 ```
 
 Behavior:
@@ -155,26 +193,44 @@ Behavior:
 - repairs new clipboard text through the same core logic
 - defaults to conservative `auto` mode unless CLI mode overrides it
 - uses the existing repair policy surface from config
-- stores the last original clipboard text so you can restore it with `waytrim-watch --restore-original`
+- stores one original clipboard buffer for `waytrim-watch --restore-original`
+- records the last watcher status, mode, and restore availability in watcher state for desktop adapters
+- keeps manual override behavior in Rust, including `--clean-once` ignoring the self-update skip guard
 
 ## Manual desktop workflow
 
-For a thin Wayland/Niri entrypoint, use:
+For thin Wayland/Niri entrypoints, use:
 - `contrib/niri/waytrim-clipboard-prose`
+- `contrib/niri/waytrim-watch-session`
 
-The helper is shipped as an executable script.
+The helpers are shipped as executable scripts.
 
-It just forwards to:
-
-```bash
-waytrim prose --clipboard
-```
+They forward to the existing CLI and systemd user-service flow rather than adding UI-side logic.
 
 For Quickshell / Noctalia-oriented integration examples, see:
 - `contrib/quickshell/waytrim/WaytrimClient.qml`
 - `contrib/quickshell/waytrim/WaytrimClipboardAction.qml`
+- `contrib/quickshell/waytrim/WaytrimWatchControl.qml`
+- `contrib/quickshell/waytrim/WaytrimNotifications.qml`
 
-See `docs/integrations.md` for Niri setup and the Quickshell / Noctalia integration examples.
+See `docs/integrations.md` for Niri setup, watcher lifecycle examples, and the Quickshell / Noctalia integration examples.
+
+## Troubleshooting
+
+If the watcher does not see the Wayland clipboard, the most common fix is:
+
+```bash
+systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR
+```
+
+Then verify state with:
+
+```bash
+waytrim-watch --status
+journalctl --user -u waytrim-watch@auto.service -n 50 --no-pager
+```
+
+See `docs/troubleshooting.md` for the full checklist.
 
 ## Fixtures
 
@@ -182,10 +238,11 @@ Fixtures live under `tests/fixtures/` and are organized by mode first, then sour
 
 Current corpus coverage includes:
 - AI-terminal wrapped prose, spacing-noise wraps, wrapped inline-code followups, spacing-noise paragraphs, blank-line noise, and heading-padding cleanup
-- TUI status-update bullets
+- TUI status-update bullets and real TUI-copied watcher bullets with edge-padding noise
 - PI/TUI wrapped prose paragraphs
 - PI/TUI wrapped bullet and numbered-list continuations
 - wrapped doc and PI blockquotes
+- real TUI-copied watcher prose wraps and prose-framed command examples
 - mixed doc and PI prose with preserved standalone command blocks
 - alignment-sensitive / table-ish text, including docs option tables, that prose should preserve by default
 - already-clean prose that should remain unchanged, including real section-break cases

@@ -64,17 +64,28 @@ fn run() -> Result<(), String> {
 }
 
 fn print_help() {
-    println!("waytrim prose");
-    println!("waytrim command");
-    println!("waytrim auto");
-    println!("waytrim prose --preview");
-    println!("waytrim prose --explain");
-    println!("waytrim prose --clipboard");
-    println!("waytrim prose --clipboard --print");
-    println!("waytrim prose --clipboard --preview");
-    println!("waytrim prose --clipboard --explain");
-    println!("waytrim --no-clipboard");
-    println!("waytrim --no-preview");
-    println!("waytrim --no-explain");
-    println!("waytrim --no-print");
+    println!("waytrim");
+    println!("repair wrapped or copy-damaged text without rewriting it");
+    println!();
+    println!("Usage:");
+    println!("  waytrim prose");
+    println!("  waytrim command");
+    println!("  waytrim auto");
+    println!("  waytrim prose --preview");
+    println!("  waytrim prose --explain");
+    println!("  waytrim prose --clipboard");
+    println!("  waytrim prose --clipboard --print");
+    println!("  waytrim prose --clipboard --preview");
+    println!("  waytrim prose --clipboard --explain");
+    println!();
+    println!("Modes:");
+    println!("  prose    repair wrapped prose while preserving visible structure");
+    println!("  command  clean copied shell commands conservatively");
+    println!("  auto     choose a conservative repair path");
+    println!();
+    println!("Config override flags:");
+    println!("  --no-clipboard");
+    println!("  --no-preview");
+    println!("  --no-explain");
+    println!("  --no-print");
 }
