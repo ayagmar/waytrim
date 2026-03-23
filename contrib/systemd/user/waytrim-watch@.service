@@ -5,7 +5,7 @@ PartOf=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/env waytrim-watch %i
+ExecStart=%h/.local/bin/waytrim-watch %i
 Restart=on-failure
 RestartSec=1
 

@@ -6,6 +6,16 @@ It is a repair tool, not a rewrite tool.
 
 ## Getting started
 
+Build and install the binaries to `~/.local/bin`:
+
+```bash
+cargo build --release --bin waytrim --bin waytrim-watch --bin waytrimctl --bin waytrimd
+install -Dm755 target/release/waytrim ~/.local/bin/waytrim
+install -Dm755 target/release/waytrim-watch ~/.local/bin/waytrim-watch
+install -Dm755 target/release/waytrimctl ~/.local/bin/waytrimctl
+install -Dm755 target/release/waytrimd ~/.local/bin/waytrimd
+```
+
 Repair wrapped prose from stdin:
 
 ```bash
@@ -222,6 +232,8 @@ If the watcher does not see the Wayland clipboard, the most common fix is:
 ```bash
 systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR
 ```
+
+If you also use clipboard history, seeing both the original and cleaned entries in history is normal.
 
 Then verify state with:
 

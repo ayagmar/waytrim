@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
-use crate::clipboard::ClipboardBackend;
+use crate::clipboard::{ClipboardBackend, ClipboardError};
 use crate::{Mode, RepairPolicy, default_runtime_dir, repair_report_with_policy};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -221,10 +221,25 @@ fn run_clipboard_once_inner<B: ClipboardBackend>(
     paths: &WatchPaths,
     honor_skip_guard: bool,
 ) -> Result<AutoClipboardOutput, String> {
-    let input = clipboard
-        .read_text()
-        .map_err(|error| format!("failed to read clipboard: {error}"))?;
     let mut state = load_state(&paths.state_path)?;
+    let input = match clipboard.read_text() {
+        Ok(input) => input,
+        Err(ClipboardError::NonText) => {
+            record_event(
+                &mut state,
+                Some(config.mode),
+                WatchEventStatus::Skipped,
+                "clipboard did not contain text",
+                WatchClipboardSource::Unknown,
+            );
+            save_state(&paths.state_path, &state)?;
+            return Ok(output(
+                AutoClipboardStatus::Skipped,
+                "clipboard did not contain text",
+            ));
+        }
+        Err(error) => return Err(format!("failed to read clipboard: {error}")),
+    };
 
     if input.is_empty() {
         record_event(
@@ -238,7 +253,12 @@ fn run_clipboard_once_inner<B: ClipboardBackend>(
         return Ok(output(AutoClipboardStatus::Empty, "clipboard is empty"));
     }
 
-    if honor_skip_guard && state.skip_next_input.as_deref() == Some(input.as_str()) {
+    if honor_skip_guard
+        && state
+            .skip_next_input
+            .as_deref()
+            .is_some_and(|saved| skip_guard_matches(saved, &input))
+    {
         state.skip_next_input = None;
         record_event(
             &mut state,
@@ -308,11 +328,16 @@ fn restore_last_original_inner<B: ClipboardBackend>(
         ));
     };
 
+    let previous_skip = state.skip_next_input.clone();
+    state.skip_next_input = Some(original.clone());
+    save_state(&paths.state_path, &state)?;
+
     if let Err(error) = clipboard.write_text(&original) {
+        state.skip_next_input = previous_skip;
+        let _ = save_state(&paths.state_path, &state);
         return Err(format!("failed to write clipboard: {error}"));
     }
 
-    state.skip_next_input = Some(original);
     record_event(
         &mut state,
         None,
@@ -333,6 +358,14 @@ fn output(status: AutoClipboardStatus, message: &str) -> AutoClipboardOutput {
         status,
         message: format!("{message}\n"),
     }
+}
+
+fn skip_guard_matches(saved: &str, input: &str) -> bool {
+    saved == input || normalize_skip_guard_text(saved) == normalize_skip_guard_text(input)
+}
+
+fn normalize_skip_guard_text(value: &str) -> &str {
+    value.trim_end_matches(['\r', '\n'])
 }
 
 fn load_state(path: &Path) -> Result<WatchState, String> {

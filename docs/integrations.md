@@ -194,6 +194,14 @@ systemctl --user daemon-reload
 systemctl --user start waytrim-watch@auto.service
 ```
 
+The shipped unit files assume a user-local install at:
+
+```bash
+~/.local/bin/waytrim-watch
+```
+
+If you install `waytrim-watch` somewhere else, adjust `ExecStart=` to match your real binary path.
+
 If your graphical session does not already export Wayland environment variables into user services, import them before enabling or starting the service:
 
 ```bash

@@ -53,6 +53,8 @@ waytrim-watch --restore-original
 
 This restores only one saved pre-clean clipboard value. It is not a clipboard history feature.
 
+If you also run a clipboard history manager such as cliphist, it is normal to see both the original and cleaned entries in history. History is still useful as a broader safety net; `--restore-original` is just the fast one-step undo for the last waytrim replacement.
+
 ## The watcher left text unchanged
 
 That is often the correct result.

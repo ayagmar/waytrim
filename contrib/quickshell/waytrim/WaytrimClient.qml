@@ -2,8 +2,12 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-QtObject {
+Item {
     id: root
+
+    visible: false
+    width: 0
+    height: 0
 
     property string socketPath: defaultSocketPath()
     readonly property bool busy: socket.connected || waitingForResponse || pendingPayload.length > 0
@@ -123,7 +127,7 @@ QtObject {
 
         path: root.socketPath
         parser: SplitParser {
-            onRead: rawResponse => root.handleResponse(rawResponse)
+            onRead: function(rawResponse) { root.handleResponse(rawResponse) }
         }
 
         onConnectedChanged: {
@@ -141,7 +145,7 @@ QtObject {
             }
         }
 
-        onError: error => {
+        onError: function(error) {
             root.pendingPayload = ""
             root.waitingForResponse = false
             root.handleFailure(`waytrim socket error: ${error}`)

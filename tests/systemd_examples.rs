@@ -13,5 +13,5 @@ fn templated_watch_service_example_exists_for_mode_switching() {
         .expect("read waytrim-watch@.service");
 
     assert!(contents.contains("Description=waytrim automatic clipboard cleaner (%i)"));
-    assert!(contents.contains("ExecStart=/usr/bin/env waytrim-watch %i"));
+    assert!(contents.contains("ExecStart=%h/.local/bin/waytrim-watch %i"));
 }

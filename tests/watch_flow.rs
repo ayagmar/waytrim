@@ -69,6 +69,45 @@ impl ClipboardBackend for WriteFailClipboard {
     }
 }
 
+struct ExtraNewlineClipboard {
+    value: RefCell<String>,
+}
+
+impl ExtraNewlineClipboard {
+    fn new(initial: &str) -> Self {
+        Self {
+            value: RefCell::new(initial.to_string()),
+        }
+    }
+
+    fn current(&self) -> String {
+        self.value.borrow().clone()
+    }
+}
+
+impl ClipboardBackend for ExtraNewlineClipboard {
+    fn read_text(&self) -> Result<String, ClipboardError> {
+        Ok(self.value.borrow().clone())
+    }
+
+    fn write_text(&self, text: &str) -> Result<(), ClipboardError> {
+        *self.value.borrow_mut() = format!("{text}\n");
+        Ok(())
+    }
+}
+
+struct NonTextClipboard;
+
+impl ClipboardBackend for NonTextClipboard {
+    fn read_text(&self) -> Result<String, ClipboardError> {
+        Err(ClipboardError::NonText)
+    }
+
+    fn write_text(&self, _text: &str) -> Result<(), ClipboardError> {
+        panic!("watcher should not write non-text clipboard contents")
+    }
+}
+
 fn watch_config() -> AutoClipboardConfig {
     AutoClipboardConfig {
         mode: Mode::Auto,
@@ -108,6 +147,21 @@ fn auto_watch_reports_unchanged_clean_clipboard() {
     let output = run_auto_clipboard_once(&watch_config(), &clipboard, &paths).expect("watch once");
     assert_eq!(output.status, AutoClipboardStatus::Unchanged);
     assert!(clipboard.writes().is_empty());
+}
+
+#[test]
+fn auto_watch_skips_non_text_clipboard_without_erroring() {
+    let clipboard = NonTextClipboard;
+    let paths = watch_paths("watch-state-non-text");
+
+    let output = run_auto_clipboard_once(&watch_config(), &clipboard, &paths).expect("watch once");
+    assert_eq!(output.status, AutoClipboardStatus::Skipped);
+    assert_eq!(output.message, "clipboard did not contain text\n");
+
+    let status = read_watch_status(&paths).expect("read skipped status");
+    assert_eq!(status.status, WatchEventStatus::Skipped);
+    assert_eq!(status.message, "clipboard did not contain text");
+    assert_eq!(status.mode, Some(Mode::Auto));
 }
 
 #[test]
@@ -216,4 +270,39 @@ fn watch_status_records_errors_from_failed_clipboard_writes() {
     assert!(status.message.contains("failed to write clipboard"));
     assert_eq!(status.mode, Some(Mode::Auto));
     assert!(!status.original_available);
+}
+
+#[test]
+fn auto_watch_skips_self_updates_even_when_clipboard_adds_extra_trailing_newlines() {
+    let clipboard = ExtraNewlineClipboard::new("This is a wrapped\nparagraph from a terminal.\n");
+    let paths = watch_paths("watch-state-extra-newline-skip");
+
+    let updated = run_auto_clipboard_once(&watch_config(), &clipboard, &paths).expect("watch once");
+    assert_eq!(updated.status, AutoClipboardStatus::Updated);
+    assert_eq!(
+        clipboard.current(),
+        "This is a wrapped paragraph from a terminal.\n\n"
+    );
+
+    let skipped = run_auto_clipboard_once(&watch_config(), &clipboard, &paths)
+        .expect("skip watcher self-update");
+    assert_eq!(skipped.status, AutoClipboardStatus::Skipped);
+}
+
+#[test]
+fn restore_original_skips_followup_when_clipboard_adds_extra_trailing_newlines() {
+    let clipboard = ExtraNewlineClipboard::new("This is a wrapped\nparagraph from a terminal.\n");
+    let paths = watch_paths("watch-state-extra-newline-restore");
+
+    run_auto_clipboard_once(&watch_config(), &clipboard, &paths).expect("watch once");
+    let restored = restore_last_original(&clipboard, &paths).expect("restore original");
+    assert_eq!(restored.status, AutoClipboardStatus::RestoredOriginal);
+    assert_eq!(
+        clipboard.current(),
+        "This is a wrapped\nparagraph from a terminal.\n\n"
+    );
+
+    let skipped = run_auto_clipboard_once(&watch_config(), &clipboard, &paths)
+        .expect("skip restored self-update");
+    assert_eq!(skipped.status, AutoClipboardStatus::Skipped);
 }

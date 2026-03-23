@@ -1,8 +1,12 @@
 import QtQuick
 import Quickshell
 
-QtObject {
+Item {
     id: root
+
+    visible: false
+    width: 0
+    height: 0
 
     property QtObject control: null
     property bool enabled: true

@@ -1,8 +1,12 @@
 import QtQuick
 import Quickshell
 
-QtObject {
+Item {
     id: root
+
+    visible: false
+    width: 0
+    height: 0
 
     property string socketPath: client.defaultSocketPath()
     property string mode: "prose"
@@ -48,7 +52,7 @@ QtObject {
             root.finished(root.status, root.lastMessage)
         }
 
-        onFailed: message => {
+        onFailed: function(message) {
             root.status = "error"
             root.lastMessage = message
             root.finished(root.status, root.lastMessage)

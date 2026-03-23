@@ -5,7 +5,16 @@
 Build the binaries:
 
 ```bash
-cargo build --release
+cargo build --release --bin waytrim --bin waytrim-watch --bin waytrimctl --bin waytrimd
+```
+
+For the shipped user service files, install the binaries to `~/.local/bin`:
+
+```bash
+install -Dm755 target/release/waytrim ~/.local/bin/waytrim
+install -Dm755 target/release/waytrim-watch ~/.local/bin/waytrim-watch
+install -Dm755 target/release/waytrimctl ~/.local/bin/waytrimctl
+install -Dm755 target/release/waytrimd ~/.local/bin/waytrimd
 ```
 
 Or run them directly with `cargo run --bin ...` while developing.

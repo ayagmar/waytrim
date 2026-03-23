@@ -2,8 +2,12 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-QtObject {
+Item {
     id: root
+
+    visible: false
+    width: 0
+    height: 0
 
     property string watchCommand: "waytrim-watch"
     property string systemctlCommand: "systemctl"
@@ -173,7 +177,7 @@ QtObject {
         stdout: StdioCollector {}
         stderr: StdioCollector {}
 
-        onExited: code => {
+        onExited: function(code) {
             if (code !== 0) {
                 root.lastStatus = "error"
                 root.lastError = String(stderr.text || stdout.text || "failed to query waytrim watch status").trim()
@@ -194,7 +198,7 @@ QtObject {
         stdout: StdioCollector {}
         stderr: StdioCollector {}
 
-        onExited: code => {
+        onExited: function(code) {
             root.enabled = code === 0
         }
     }
@@ -207,7 +211,7 @@ QtObject {
         stdout: StdioCollector {}
         stderr: StdioCollector {}
 
-        onExited: code => {
+        onExited: function(code) {
             const message = String(stderr.text || stdout.text || "").trim()
 
             if (code !== 0) {
