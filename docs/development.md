@@ -126,6 +126,8 @@ Notes:
 - clipboard integration depends on `wl-paste` and `wl-copy`
 - explicit overrides `--no-preview`, `--no-explain`, `--no-print`, and `--no-clipboard` can disable config-provided defaults
 - the IPC socket defaults to `XDG_RUNTIME_DIR/waytrim/waytrim.sock`
+- when `XDG_RUNTIME_DIR` is missing, the fallback is `${TMPDIR:-/tmp}/waytrim-<uid>/waytrim.sock`
+- the service refuses to remove non-socket paths and refuses startup when another listener already owns the socket
 - `waytrimctl` prints JSON by default and can print only repaired text with `--text`
 
 ## Test and format

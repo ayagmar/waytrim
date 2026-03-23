@@ -41,5 +41,5 @@ fn run() -> Result<(), String> {
 
 fn print_help() {
     println!("waytrimd");
-    println!("waytrimd --socket /tmp/waytrim.sock");
+    println!("waytrimd --socket /path/to/waytrim.sock");
 }

@@ -12,10 +12,21 @@ Current state:
 
 Socket path:
 - default: `$XDG_RUNTIME_DIR/waytrim/waytrim.sock`
-- fallback: `${TMPDIR:-/tmp}/waytrim.sock`
+- fallback: `${TMPDIR:-/tmp}/waytrim-<uid>/waytrim.sock`
+
+Service startup safety:
+- refuses to remove a non-socket path
+- refuses startup if another service is already listening on the socket
+- removes only confirmed stale socket files
 
 IPC version:
 - `1`
+
+Compatibility expectations:
+- clients must send a `version`
+- the service returns an error for unsupported versions and does not process the request
+- incompatible request or response shape changes require a new `IPC_VERSION`
+- Quickshell / Noctalia clients should branch on `status` and `version`, then read `report`
 
 ### Request
 
@@ -117,21 +128,26 @@ It is intentionally thin and just calls:
 waytrim prose --clipboard
 ```
 
-Example Niri bind:
+End-to-end Niri recipe:
+
+1. Build or install `waytrim` so the binary is on your `PATH`.
+2. The helper is already shipped as an executable script. If you copied it elsewhere and lost the mode bit, restore it with:
+
+```bash
+chmod +x /path/to/waytrim/contrib/niri/waytrim-clipboard-prose
+```
+
+3. Add binds like this to your Niri config:
 
 ```kdl
 binds {
     Mod+Shift+v { spawn "sh" "-lc" "/path/to/waytrim/contrib/niri/waytrim-clipboard-prose"; }
-}
-```
-
-If you want repaired text echoed to stdout for debugging:
-
-```kdl
-binds {
     Mod+Shift+Ctrl+v { spawn "sh" "-lc" "/path/to/waytrim/contrib/niri/waytrim-clipboard-prose --print"; }
 }
 ```
+
+4. Reload Niri, copy wrapped text, then press `Mod+Shift+v` to repair the current clipboard in place.
+5. Use `Mod+Shift+Ctrl+v` when you want the same flow plus stdout output for debugging.
 
 ## Quickshell / Noctalia direction
 

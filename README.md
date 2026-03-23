@@ -116,7 +116,7 @@ For local automation and future desktop integrations, waytrim also ships:
 
 Default socket path:
 - `XDG_RUNTIME_DIR/waytrim/waytrim.sock`
-- fallback: `${TMPDIR:-/tmp}/waytrim.sock`
+- fallback: `${TMPDIR:-/tmp}/waytrim-<uid>/waytrim.sock`
 
 The IPC response carries a stable machine-readable report with:
 - `requested_mode`
@@ -145,6 +145,8 @@ cargo fmt --check
 
 For a thin Wayland/Niri entrypoint, use:
 - `contrib/niri/waytrim-clipboard-prose`
+
+The helper is shipped as an executable script.
 
 It just forwards to:
 

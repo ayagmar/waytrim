@@ -124,7 +124,7 @@ fn parse_mode(value: &str) -> Result<Mode, String> {
 
 fn print_help() {
     println!("waytrimctl repair prose");
-    println!("waytrimctl repair command --socket /tmp/waytrim.sock");
+    println!("waytrimctl repair command --socket /path/to/waytrim.sock");
     println!("waytrimctl repair auto --text");
     println!("waytrimctl shutdown");
 }

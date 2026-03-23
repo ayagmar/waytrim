@@ -2,6 +2,7 @@ use std::env;
 use std::fs;
 use std::io::{Read, Write};
 use std::net::Shutdown;
+use std::os::unix::fs::MetadataExt;
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 
@@ -20,7 +21,9 @@ pub fn default_socket_path() -> PathBuf {
             .join(SOCKET_FILE_NAME);
     }
 
-    env::temp_dir().join(SOCKET_FILE_NAME)
+    env::temp_dir()
+        .join(format!("waytrim-{}", fallback_socket_namespace()))
+        .join(SOCKET_FILE_NAME)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -106,6 +109,34 @@ pub(crate) fn ensure_socket_parent(path: &Path) -> Result<(), String> {
 
     fs::create_dir_all(parent)
         .map_err(|error| format!("failed to create socket dir {}: {error}", parent.display()))
+}
+
+fn fallback_socket_namespace() -> String {
+    if let Some(home) = env::var_os("HOME")
+        && let Ok(metadata) = fs::metadata(home)
+    {
+        return metadata.uid().to_string();
+    }
+
+    if let Some(user) = env::var_os("USER") {
+        let sanitized: String = user
+            .to_string_lossy()
+            .chars()
+            .map(|ch| {
+                if ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.') {
+                    ch
+                } else {
+                    '_'
+                }
+            })
+            .collect();
+
+        if !sanitized.is_empty() {
+            return sanitized;
+        }
+    }
+
+    String::from("unknown")
 }
 
 pub(crate) fn read_request(stream: &mut UnixStream) -> Result<IpcRequest, String> {
