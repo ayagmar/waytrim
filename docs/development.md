@@ -105,6 +105,15 @@ cargo run -- prose --clipboard --preview
 cargo run -- prose --clipboard --explain
 ```
 
+### Local service and IPC
+
+```bash
+cargo run --bin waytrimd
+printf 'This is a wrapped\nparagraph.\n' | cargo run --bin waytrimctl -- repair prose
+printf 'This is a wrapped\nparagraph.\n' | cargo run --bin waytrimctl -- repair prose --text
+cargo run --bin waytrimctl -- shutdown
+```
+
 Notes:
 - clipboard mode stays mode-centered
 - `--preview` is non-mutating in clipboard mode
@@ -116,6 +125,8 @@ Notes:
 - empty clipboard input should report a clear success message
 - clipboard integration depends on `wl-paste` and `wl-copy`
 - explicit overrides `--no-preview`, `--no-explain`, `--no-print`, and `--no-clipboard` can disable config-provided defaults
+- the IPC socket defaults to `XDG_RUNTIME_DIR/waytrim/waytrim.sock`
+- `waytrimctl` prints JSON by default and can print only repaired text with `--text`
 
 ## Test and format
 
@@ -128,11 +139,21 @@ cargo test
 
 ```text
 src/
-  lib.rs        core repair logic
+  core/         repair modes, detection, rendering, and policy/report types
+  lib.rs        crate exports
   cli.rs        CLI config resolution and clipboard flow
   config.rs     XDG user config loader
   clipboard.rs  wl-paste / wl-copy adapter
-  main.rs       CLI adapter
+  ipc.rs        Unix-socket request/response types and helpers
+  service.rs    local service loop over the repair core
+  main.rs       canonical CLI adapter
+  bin/
+    waytrimd.rs   daemon entrypoint
+    waytrimctl.rs IPC client entrypoint
+
+contrib/
+  niri/
+    waytrim-clipboard-prose  thin helper for mode-centered clipboard cleanup
 
 tests/
   *.rs          integration tests
@@ -142,6 +163,7 @@ tests/
 docs/
   architecture.md
   development.md
+  integrations.md
 ```
 
 ## Notes

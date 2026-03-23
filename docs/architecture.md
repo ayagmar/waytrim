@@ -14,7 +14,7 @@ waytrim is structured around a small repair core with thin delivery layers.
 
 ### Core library
 
-`src/lib.rs`
+`src/core/`
 
 The core library owns:
 
@@ -27,7 +27,7 @@ The core library owns:
 The core should remain independent from:
 
 - Wayland clipboard APIs
-- daemon state
+- daemon state and lifecycle
 - IPC transport details
 - Quickshell / Noctalia UI concerns
 - Niri-specific workflow glue
@@ -49,6 +49,20 @@ The CLI is the current canonical interface. It is intentionally thin:
 The preferred clipboard UX is mode-centered: `waytrim prose --clipboard`, not `waytrim clipboard prose`.
 
 Clipboard handling itself stays in a small backend adapter (`src/clipboard.rs`) that shells out to `wl-paste` and `wl-copy`. User config loading lives in `src/config.rs` and resolves to typed defaults before the CLI adapter runs. The CLI flow reuses the same `repair_with_policy()`, `render_preview()`, and `render_explain()` paths as stdin mode, and keeps clipboard status messaging separate from cleaned text output.
+
+### Local service and IPC adapters
+
+`src/service.rs`
+`src/ipc.rs`
+`src/bin/waytrimd.rs`
+`src/bin/waytrimctl.rs`
+
+The local automation layer is also intentionally thin:
+
+- `waytrimd` exposes the same repair core over a Unix socket
+- `waytrimctl` sends JSON requests and prints JSON responses or repaired text
+- the response contract carries `requested_mode`, `effective_mode`, `decision`, `changed`, `output`, and `explain`
+- desktop integrations should target this stable contract instead of internal heuristics
 
 ## Mode boundaries
 
@@ -75,17 +89,17 @@ The test layout mirrors the product boundary:
 - negative preservation cases
 - metadata describing preserve/avoid intent
 
-## Future integration direction
+## Integration direction
 
-These are expected to stay outside the core:
+These stay outside the core:
 
 - manual clipboard-clean action
 - Wayland clipboard adapter
-- background daemon
-- IPC layer
+- local daemon/service lifecycle
+- IPC transport layer
 - Quickshell / Noctalia integration
 - Niri-oriented keybind workflows
 
-Those layers should call the same core repair contracts rather than introducing separate cleanup logic.
+Those layers should call the same core repair contracts rather than introducing separate cleanup logic. The current repo now includes the local service and IPC slice; Quickshell / Noctalia and Niri-specific UX remain delivery-layer work on top of that contract.
 
 For the manual clipboard slice, `--preview` and `--explain` must remain non-mutating, `--print` must have explicit semantics, and `clipboard unchanged` should be treated as a first-class successful outcome. Missing user config should be silent, invalid user config should warn and fall back to built-in defaults, and explicit CLI flags should always win over file config.

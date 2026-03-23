@@ -106,10 +106,33 @@ Behavior:
 Runtime dependency:
 - Wayland clipboard support uses `wl-paste` and `wl-copy`
 
+## Optional local automation layer
+
+The canonical user interface is still `waytrim`.
+
+For local automation and future desktop integrations, waytrim also ships:
+- `waytrimd` — Unix-socket service exposing the same repair core
+- `waytrimctl` — thin JSON IPC client for the service
+
+Default socket path:
+- `XDG_RUNTIME_DIR/waytrim/waytrim.sock`
+- fallback: `${TMPDIR:-/tmp}/waytrim.sock`
+
+The IPC response carries a stable machine-readable report with:
+- `requested_mode`
+- `effective_mode`
+- `decision`
+- `changed`
+- `output`
+- `explain`
+
+See `docs/integrations.md` for the JSON contract, service usage, and desktop workflow examples.
+
 ## Development docs
 
 - `docs/architecture.md`
 - `docs/development.md`
+- `docs/integrations.md`
 
 ## Testing
 
@@ -117,6 +140,19 @@ Runtime dependency:
 cargo test
 cargo fmt --check
 ```
+
+## Manual desktop workflow
+
+For a thin Wayland/Niri entrypoint, use:
+- `contrib/niri/waytrim-clipboard-prose`
+
+It just forwards to:
+
+```bash
+waytrim prose --clipboard
+```
+
+See `docs/integrations.md` for example Niri binds and the future Quickshell / Noctalia direction.
 
 ## Fixtures
 
