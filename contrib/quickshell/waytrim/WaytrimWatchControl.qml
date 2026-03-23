@@ -43,7 +43,7 @@ QtObject {
         mode = requestedMode
 
         if (!useSystemd) {
-            Quickshell.execDetached([watchCommand, requestedMode])
+            Quickshell.execDetached(watchArgs([requestedMode]))
             enabled = true
             lastError = ""
             lastStatus = "idle"

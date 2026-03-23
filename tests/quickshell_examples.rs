@@ -38,6 +38,7 @@ fn quickshell_watch_control_example_exists_and_stays_thin() {
     assert!(contents.contains("function toggle()"));
     assert!(contents.contains("function restoreOriginal()"));
     assert!(contents.contains("function cleanOnce(nextMode)"));
+    assert!(contents.contains("watchArgs([requestedMode])"));
 }
 
 #[test]
