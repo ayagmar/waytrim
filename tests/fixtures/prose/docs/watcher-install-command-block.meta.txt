@@ -1,0 +1,3 @@
+notes: real tui-copied install section with watcher command
+preserve: prose framing, command examples
+avoid: forced classification, prose-command merge

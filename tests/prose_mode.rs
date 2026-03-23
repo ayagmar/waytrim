@@ -31,6 +31,26 @@ fn prose_repairs_wrapped_tui_status_update_fixture() {
 }
 
 #[test]
+fn prose_repairs_real_tui_copied_watcher_wrap_fixture() {
+    let input = fixture_input("prose/tui/watcher-wrap");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/tui/watcher-wrap");
+
+    assert!(meta.preserve.iter().any(|value| value == "paragraphs"));
+    assert_eq!(output, fixture_output("prose/tui/watcher-wrap"));
+}
+
+#[test]
+fn prose_repairs_real_tui_copied_watcher_bullets_fixture() {
+    let input = fixture_input("prose/tui/watcher-bullets");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/tui/watcher-bullets");
+
+    assert!(meta.preserve.iter().any(|value| value == "bullets"));
+    assert_eq!(output, fixture_output("prose/tui/watcher-bullets"));
+}
+
+#[test]
 fn prose_repairs_wrapped_blockquote_fixture() {
     let input = fixture_input("prose/docs/blockquote-wrap");
     let output = run_waytrim(&["prose"], &input);
@@ -114,6 +134,40 @@ fn prose_preserves_mixed_docs_command_block_fixture() {
 
     assert!(meta.preserve.iter().any(|value| value == "command blocks"));
     assert_eq!(output, fixture_output("prose/docs/mixed-command-block"));
+}
+
+#[test]
+fn prose_preserves_real_tui_copied_install_command_block_fixture() {
+    let input = fixture_input("prose/docs/watcher-install-command-block");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/docs/watcher-install-command-block");
+
+    assert!(
+        meta.preserve
+            .iter()
+            .any(|value| value == "command examples")
+    );
+    assert_eq!(
+        output,
+        fixture_output("prose/docs/watcher-install-command-block")
+    );
+}
+
+#[test]
+fn prose_preserves_real_tui_copied_systemctl_command_block_fixture() {
+    let input = fixture_input("prose/docs/watcher-systemctl-command-block");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/docs/watcher-systemctl-command-block");
+
+    assert!(
+        meta.preserve
+            .iter()
+            .any(|value| value == "command examples")
+    );
+    assert_eq!(
+        output,
+        fixture_output("prose/docs/watcher-systemctl-command-block")
+    );
 }
 
 #[test]

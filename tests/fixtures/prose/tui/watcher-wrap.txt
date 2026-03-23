@@ -1,0 +1,3 @@
+The watcher should stay boring in the best way: if it sees obviously wrapped prose, it should fix it quietly, and if it sees 
+ something ambiguous, it should usually leave it alone rather than guessing.                                                  
+                                                                                

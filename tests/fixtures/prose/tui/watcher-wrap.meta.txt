@@ -1,0 +1,3 @@
+notes: real tui-copied watcher prose paragraph
+preserve: paragraphs
+avoid: rewrite, markdown-prettify

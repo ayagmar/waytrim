@@ -1,0 +1,3 @@
+notes: real tui-copied run-this section with systemctl commands
+preserve: prose framing, command examples
+avoid: forced classification, prose-command merge

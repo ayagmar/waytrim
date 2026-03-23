@@ -6,7 +6,7 @@ use super::detect::{
 use super::policy::{AutoPolicy, Mode, RepairPolicy};
 use super::prose::repair_prose;
 use super::report::{ExplainStep, RepairDecision, RepairOutcome};
-use super::text::finish_with_newline;
+use super::text::{finish_with_newline, strip_uniform_single_leading_space};
 
 pub(crate) fn repair_auto(input: &str, policy: &RepairPolicy) -> RepairOutcome {
     if looks_like_command(input) {
@@ -69,6 +69,7 @@ pub(crate) fn repair_auto(input: &str, policy: &RepairPolicy) -> RepairOutcome {
 }
 
 pub(crate) fn minimal_prose_safe_cleanup(input: &str) -> String {
+    let input = strip_uniform_single_leading_space(input);
     let mut output = Vec::new();
     let mut blank_count = 0;
 

@@ -14,6 +14,43 @@ pub(crate) fn normalize_heading_padding(line: &str) -> String {
     format!("{} {}", "#".repeat(marker_len), rest.trim())
 }
 
+pub(crate) fn strip_uniform_single_leading_space(input: &str) -> String {
+    let mut saw_non_empty = false;
+
+    for line in input.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+
+        saw_non_empty = true;
+
+        let mut chars = line.chars();
+        if !matches!(chars.next(), Some(' ')) {
+            return input.to_string();
+        }
+
+        if chars.next().is_some_and(char::is_whitespace) {
+            return input.to_string();
+        }
+    }
+
+    if !saw_non_empty {
+        return input.to_string();
+    }
+
+    let stripped = input
+        .lines()
+        .map(|line| line.strip_prefix(' ').unwrap_or(line))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    if input.ends_with('\n') {
+        format!("{stripped}\n")
+    } else {
+        stripped
+    }
+}
+
 pub(crate) fn normalize_inline_spacing(line: &str) -> String {
     let mut result = String::with_capacity(line.len());
     let mut last_was_whitespace = false;

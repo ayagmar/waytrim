@@ -49,6 +49,40 @@ fn auto_declines_to_rewrite_mixed_docs_command_block_fixture() {
 }
 
 #[test]
+fn auto_keeps_real_tui_copied_install_command_block_conservative() {
+    let input = fixture_input("prose/docs/watcher-install-command-block");
+    let output = run_waytrim(&["auto"], &input);
+    let meta = support::fixture_meta("prose/docs/watcher-install-command-block");
+
+    assert!(
+        meta.avoid
+            .iter()
+            .any(|value| value == "prose-command merge")
+    );
+    assert_eq!(
+        output,
+        fixture_output("prose/docs/watcher-install-command-block")
+    );
+}
+
+#[test]
+fn auto_keeps_real_tui_copied_systemctl_command_block_conservative() {
+    let input = fixture_input("prose/docs/watcher-systemctl-command-block");
+    let output = run_waytrim(&["auto"], &input);
+    let meta = support::fixture_meta("prose/docs/watcher-systemctl-command-block");
+
+    assert!(
+        meta.avoid
+            .iter()
+            .any(|value| value == "prose-command merge")
+    );
+    assert_eq!(
+        output,
+        fixture_output("prose/docs/watcher-systemctl-command-block")
+    );
+}
+
+#[test]
 fn auto_declines_to_rewrite_mixed_pi_command_block_fixture() {
     let input = fixture_input("auto/ambiguous/pi-mixed-command-block");
     let output = run_waytrim(&["auto"], &input);

@@ -1,0 +1,3 @@
+notes: real tui-copied watcher bullets with edge padding noise
+preserve: bullets
+avoid: rewrite, paragraph-merge

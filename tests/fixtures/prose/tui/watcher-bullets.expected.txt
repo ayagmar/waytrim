@@ -1,0 +1,3 @@
+- The Rust core should own repair decisions.
+- QML should stay thin and only call stable commands.
+- A skipped cleanup is often the correct result.

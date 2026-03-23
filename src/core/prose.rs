@@ -6,9 +6,13 @@ use super::detect::{
 };
 use super::policy::RepairPolicy;
 use super::report::ExplainStep;
-use super::text::{finish_with_newline, normalize_heading_padding, normalize_inline_spacing};
+use super::text::{
+    finish_with_newline, normalize_heading_padding, normalize_inline_spacing,
+    strip_uniform_single_leading_space,
+};
 
 pub(crate) fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<ExplainStep>) {
+    let input = strip_uniform_single_leading_space(input);
     let mut output_lines = Vec::new();
     let mut paragraph = Vec::new();
     let mut paragraph_start_line = None;

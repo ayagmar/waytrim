@@ -1,0 +1,4 @@
+ Run this:                                                                                                                    
+ systemctl --user daemon-reload                                                                                               
+ systemctl --user enable --now waytrim-watch@auto.service                                                                     
+                                                            

@@ -1,0 +1,6 @@
+ Install command:                                                                                                             
+ cargo install --path .                                                                                                       
+                                                                                                                              
+ Then start the watcher:                                                                                                      
+ waytrim-watch auto                                                                                                           
+                        
