@@ -5,6 +5,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+const WRITE_FAILURE_POLL_ATTEMPTS: usize = 20;
+const WRITE_FAILURE_POLL_INTERVAL: Duration = Duration::from_millis(10);
+
 pub trait ClipboardBackend {
     fn read_text(&self) -> Result<String, ClipboardError>;
     fn write_text(&self, text: &str) -> Result<(), ClipboardError>;
@@ -108,8 +111,6 @@ impl ClipboardBackend for SystemClipboard {
                     Err(error) => return Err(error),
                 }
             }
-
-            return Err(ClipboardError::NonText);
         }
 
         let output = run_command(&self.read_command, &[])?;
@@ -145,15 +146,19 @@ impl ClipboardBackend for SystemClipboard {
             })?;
 
         let _ = fs::remove_file(&input_path);
-        thread::sleep(Duration::from_millis(5));
 
-        if let Some(status) = child
-            .try_wait()
-            .map_err(|error| ClipboardError::CommandFailed {
-                command: self.write_command.program.clone(),
-                detail: error.to_string(),
-            })?
-        {
+        for _ in 0..WRITE_FAILURE_POLL_ATTEMPTS {
+            let Some(status) = child
+                .try_wait()
+                .map_err(|error| ClipboardError::CommandFailed {
+                    command: self.write_command.program.clone(),
+                    detail: error.to_string(),
+                })?
+            else {
+                thread::sleep(WRITE_FAILURE_POLL_INTERVAL);
+                continue;
+            };
+
             let output =
                 child
                     .wait_with_output()
@@ -168,6 +173,8 @@ impl ClipboardBackend for SystemClipboard {
                     detail: String::from_utf8_lossy(&output.stderr).trim().to_string(),
                 });
             }
+
+            break;
         }
 
         Ok(())

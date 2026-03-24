@@ -72,31 +72,19 @@ fn system_backend_reports_invalid_utf8_reads_clearly() {
 }
 
 #[test]
-fn system_backend_skips_non_text_clipboard_offers_without_reading_payload() {
-    let read_marker_path = temp_file_path("clipboard-read-marker");
+fn system_backend_returns_non_text_when_untyped_fallback_is_not_utf8() {
     let clipboard = SystemClipboard::with_commands_and_text_types(
         CommandSpec::new("sh").with_arg("-c").with_arg(format!(
-            "if [ \"$1\" = \"--type\" ]; then echo \"Clipboard content is not available as requested type '$2'\" >&2; exit 1; fi; touch '{}'; sleep 2; printf 'should not be read'",
-            read_marker_path.display(),
+            "if [ \"$1\" = \"--type\" ]; then echo \"Clipboard content is not available as requested type '$2'\" >&2; exit 1; fi; printf '\\377'",
         ))
         .with_arg("sh"),
         CommandSpec::new("waytrim-missing-wl-copy"),
         Some(vec![String::from("text/plain;charset=utf-8"), String::from("text/plain")]),
     );
 
-    let start = Instant::now();
     let error = clipboard.read_text().expect_err("expected non-text error");
 
     assert!(matches!(error, ClipboardError::NonText));
-    assert!(
-        start.elapsed() < Duration::from_secs(1),
-        "non-text probe took too long: {:?}",
-        start.elapsed()
-    );
-    assert!(
-        !read_marker_path.exists(),
-        "clipboard payload should not be read"
-    );
 }
 
 #[test]
@@ -129,6 +117,25 @@ fn system_backend_falls_back_to_next_text_type_when_preferred_one_is_unavailable
     );
 
     assert_eq!(clipboard.read_text().expect("read clipboard"), "fallback");
+}
+
+#[test]
+fn system_backend_falls_back_to_untyped_read_when_preferred_types_are_unavailable() {
+    let clipboard = SystemClipboard::with_commands_and_text_types(
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg(
+                "if [ \"$1\" = \"--type\" ]; then echo \"Clipboard content is not available as requested type '$2'\" >&2; exit 1; fi; printf 'fallback from default read'",
+            )
+            .with_arg("sh"),
+        CommandSpec::new("waytrim-missing-wl-copy"),
+        Some(vec![String::from("text/plain;charset=utf-8"), String::from("text/plain")]),
+    );
+
+    assert_eq!(
+        clipboard.read_text().expect("read clipboard"),
+        "fallback from default read"
+    );
 }
 
 #[test]
@@ -204,4 +211,24 @@ fn system_backend_reports_quick_write_failures() {
         .expect_err("write should fail");
 
     assert!(error.to_string().contains("permission denied"));
+}
+
+#[test]
+fn system_backend_reports_delayed_write_failures() {
+    let clipboard = SystemClipboard::with_commands(
+        CommandSpec::new("waytrim-missing-wl-paste"),
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg("sleep 0.05; echo 'permission denied after startup' >&2; exit 1"),
+    );
+
+    let error = clipboard
+        .write_text("copied without waiting\n")
+        .expect_err("write should fail");
+
+    assert!(
+        error
+            .to_string()
+            .contains("permission denied after startup")
+    );
 }
