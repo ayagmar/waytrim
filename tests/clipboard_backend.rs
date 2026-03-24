@@ -74,10 +74,12 @@ fn system_backend_reports_invalid_utf8_reads_clearly() {
 #[test]
 fn system_backend_returns_non_text_when_untyped_fallback_is_not_utf8() {
     let clipboard = SystemClipboard::with_commands_and_text_types(
-        CommandSpec::new("sh").with_arg("-c").with_arg(format!(
-            "if [ \"$1\" = \"--type\" ]; then echo \"Clipboard content is not available as requested type '$2'\" >&2; exit 1; fi; printf '\\377'",
-        ))
-        .with_arg("sh"),
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg(
+                "if [ \"$1\" = \"--type\" ]; then echo \"Clipboard content is not available as requested type '$2'\" >&2; exit 1; fi; printf '\\377'",
+            )
+            .with_arg("sh"),
         CommandSpec::new("waytrim-missing-wl-copy"),
         Some(vec![String::from("text/plain;charset=utf-8"), String::from("text/plain")]),
     );
