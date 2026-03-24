@@ -148,7 +148,7 @@ Notes:
 
 ## Local reinstall helper
 
-To rebuild, reinstall to `~/.local/bin`, refresh the shipped user service files, and restart `waytrim-watch@auto.service` when it is enabled or already running:
+To rebuild, reinstall to `~/.local/bin`, refresh the shipped user service files, and restart the shipped watcher unit when `waytrim-watch.service` or `waytrim-watch@auto.service` is enabled or already running:
 
 ```bash
 ./scripts/reinstall-local

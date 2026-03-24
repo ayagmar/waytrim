@@ -17,11 +17,13 @@ install -Dm644 "$repo_dir/contrib/systemd/user/waytrim-watch@.service" \
 if command -v systemctl >/dev/null 2>&1; then
   systemctl --user daemon-reload
 
-  if systemctl --user --quiet is-enabled waytrim-watch@auto.service \
-    || systemctl --user --quiet is-active waytrim-watch@auto.service; then
-    echo "Restarting waytrim-watch@auto.service"
-    systemctl --user restart waytrim-watch@auto.service
-  fi
+  for unit in waytrim-watch.service waytrim-watch@auto.service; do
+    if systemctl --user --quiet is-enabled "$unit" \
+      || systemctl --user --quiet is-active "$unit"; then
+      echo "Restarting $unit"
+      systemctl --user restart "$unit"
+    fi
+  done
 fi
 
 echo "Done"
