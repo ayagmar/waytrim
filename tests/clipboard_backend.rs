@@ -72,6 +72,75 @@ fn system_backend_reports_invalid_utf8_reads_clearly() {
 }
 
 #[test]
+fn system_backend_returns_non_text_when_untyped_fallback_is_not_utf8() {
+    let clipboard = SystemClipboard::with_commands_and_text_types(
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg(
+                "if [ \"$1\" = \"--type\" ]; then echo \"Clipboard content is not available as requested type '$2'\" >&2; exit 1; fi; printf '\\377'",
+            )
+            .with_arg("sh"),
+        CommandSpec::new("waytrim-missing-wl-copy"),
+        Some(vec![String::from("text/plain;charset=utf-8"), String::from("text/plain")]),
+    );
+
+    let error = clipboard.read_text().expect_err("expected non-text error");
+
+    assert!(matches!(error, ClipboardError::NonText));
+}
+
+#[test]
+fn system_backend_prefers_plain_text_type_before_reading_payload() {
+    let clipboard = SystemClipboard::with_commands_and_text_types(
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg(
+                "if [ \"$1\" = \"--type\" ] && [ \"$2\" = \"text/plain;charset=utf-8\" ]; then printf 'hello'; else echo 'wrong type' >&2; exit 1; fi",
+            )
+            .with_arg("sh"),
+        CommandSpec::new("waytrim-missing-wl-copy"),
+        Some(vec![String::from("text/plain;charset=utf-8"), String::from("text/plain")]),
+    );
+
+    assert_eq!(clipboard.read_text().expect("read clipboard"), "hello");
+}
+
+#[test]
+fn system_backend_falls_back_to_next_text_type_when_preferred_one_is_unavailable() {
+    let clipboard = SystemClipboard::with_commands_and_text_types(
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg(
+                "if [ \"$1\" = \"--type\" ] && [ \"$2\" = \"text/plain;charset=utf-8\" ]; then echo \"Clipboard content is not available as requested type '$2'\" >&2; exit 1; fi; if [ \"$1\" = \"--type\" ] && [ \"$2\" = \"text/plain\" ]; then printf 'fallback'; exit 0; fi; echo 'wrong type' >&2; exit 1",
+            )
+            .with_arg("sh"),
+        CommandSpec::new("waytrim-missing-wl-copy"),
+        Some(vec![String::from("text/plain;charset=utf-8"), String::from("text/plain")]),
+    );
+
+    assert_eq!(clipboard.read_text().expect("read clipboard"), "fallback");
+}
+
+#[test]
+fn system_backend_falls_back_to_untyped_read_when_preferred_types_are_unavailable() {
+    let clipboard = SystemClipboard::with_commands_and_text_types(
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg(
+                "if [ \"$1\" = \"--type\" ]; then echo \"Clipboard content is not available as requested type '$2'\" >&2; exit 1; fi; printf 'fallback from default read'",
+            )
+            .with_arg("sh"),
+        CommandSpec::new("waytrim-missing-wl-copy"),
+        Some(vec![String::from("text/plain;charset=utf-8"), String::from("text/plain")]),
+    );
+
+    assert_eq!(
+        clipboard.read_text().expect("read clipboard"),
+        "fallback from default read"
+    );
+}
+
+#[test]
 fn system_backend_writes_text_through_configured_command() {
     let output_path = temp_file_path("clipboard-write-output");
     let clipboard = SystemClipboard::with_commands(
@@ -127,5 +196,41 @@ fn system_backend_does_not_wait_for_long_lived_clipboard_process() {
         start.elapsed() < Duration::from_secs(1),
         "clipboard write waited too long: {:?}",
         start.elapsed()
+    );
+}
+
+#[test]
+fn system_backend_reports_quick_write_failures() {
+    let clipboard = SystemClipboard::with_commands(
+        CommandSpec::new("waytrim-missing-wl-paste"),
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg("echo 'permission denied' >&2; exit 1"),
+    );
+
+    let error = clipboard
+        .write_text("copied without waiting\n")
+        .expect_err("write should fail");
+
+    assert!(error.to_string().contains("permission denied"));
+}
+
+#[test]
+fn system_backend_reports_delayed_write_failures() {
+    let clipboard = SystemClipboard::with_commands(
+        CommandSpec::new("waytrim-missing-wl-paste"),
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg("sleep 0.05; echo 'permission denied after startup' >&2; exit 1"),
+    );
+
+    let error = clipboard
+        .write_text("copied without waiting\n")
+        .expect_err("write should fail");
+
+    assert!(
+        error
+            .to_string()
+            .contains("permission denied after startup")
     );
 }

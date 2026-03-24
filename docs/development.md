@@ -136,6 +136,7 @@ Notes:
 - `clipboard unchanged` should be reported clearly when nothing changes
 - empty clipboard input should report a clear success message
 - clipboard integration depends on `wl-paste` and `wl-copy`
+- the Wayland backend requests preferred plain-text clipboard types first and skips non-text offers such as images without reading binary payloads
 - explicit overrides `--no-preview`, `--no-explain`, `--no-print`, and `--no-clipboard` can disable config-provided defaults
 - the IPC socket defaults to `XDG_RUNTIME_DIR/waytrim/waytrim.sock`
 - when `XDG_RUNTIME_DIR` is missing, the fallback is `${TMPDIR:-/tmp}/waytrim-<uid>/waytrim.sock`
@@ -148,7 +149,7 @@ Notes:
 
 ## Local reinstall helper
 
-To rebuild, reinstall to `~/.local/bin`, refresh the shipped user service files, and restart `waytrim-watch@auto.service` when it is enabled or already running:
+To rebuild, reinstall to `~/.local/bin`, refresh the shipped user service files, and restart the shipped watcher unit when `waytrim-watch.service` or `waytrim-watch@auto.service` is enabled or already running:
 
 ```bash
 ./scripts/reinstall-local
@@ -160,8 +161,9 @@ You can override the install root with `WAYTRIM_INSTALL_ROOT=/some/prefix`.
 
 ```bash
 cargo fmt --check
-cargo test
 cargo clippy --all-targets --all-features -- -D warnings
+cargo test
+shellcheck scripts/reinstall-local contrib/niri/waytrim-clipboard-prose contrib/niri/waytrim-watch-session
 ```
 
 ## Repository layout

@@ -1,9 +1,12 @@
 use std::fmt;
 use std::fs;
-use std::process::{self, Command};
+use std::process::{self, Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+const WRITE_FAILURE_POLL_ATTEMPTS: usize = 20;
+const WRITE_FAILURE_POLL_INTERVAL: Duration = Duration::from_millis(10);
 
 pub trait ClipboardBackend {
     fn read_text(&self) -> Result<String, ClipboardError>;
@@ -55,17 +58,31 @@ impl CommandSpec {
 pub struct SystemClipboard {
     read_command: CommandSpec,
     write_command: CommandSpec,
+    preferred_text_types: Option<Vec<String>>,
 }
 
 impl SystemClipboard {
     pub fn new() -> Self {
-        Self::with_commands(CommandSpec::new("wl-paste"), CommandSpec::new("wl-copy"))
+        Self::with_commands_and_text_types(
+            CommandSpec::new("wl-paste"),
+            CommandSpec::new("wl-copy"),
+            Some(default_preferred_text_types()),
+        )
     }
 
     pub fn with_commands(read_command: CommandSpec, write_command: CommandSpec) -> Self {
+        Self::with_commands_and_text_types(read_command, write_command, None)
+    }
+
+    pub fn with_commands_and_text_types(
+        read_command: CommandSpec,
+        write_command: CommandSpec,
+        preferred_text_types: Option<Vec<String>>,
+    ) -> Self {
         Self {
             read_command,
             write_command,
+            preferred_text_types,
         }
     }
 }
@@ -78,26 +95,25 @@ impl Default for SystemClipboard {
 
 impl ClipboardBackend for SystemClipboard {
     fn read_text(&self) -> Result<String, ClipboardError> {
-        let output = Command::new(&self.read_command.program)
-            .args(&self.read_command.args)
-            .output()
-            .map_err(|error| match error.kind() {
-                std::io::ErrorKind::NotFound => ClipboardError::CommandNotFound {
-                    command: self.read_command.program.clone(),
-                },
-                _ => ClipboardError::CommandFailed {
-                    command: self.read_command.program.clone(),
-                    detail: error.to_string(),
-                },
-            })?;
-
-        if !output.status.success() {
-            return Err(ClipboardError::CommandFailed {
-                command: self.read_command.program.clone(),
-                detail: String::from_utf8_lossy(&output.stderr).trim().to_string(),
-            });
+        if let Some(preferred_text_types) = &self.preferred_text_types {
+            for text_type in preferred_text_types {
+                let extra_args = [String::from("--type"), text_type.clone()];
+                match run_command(&self.read_command, &extra_args) {
+                    Ok(output) => {
+                        return String::from_utf8(output.stdout)
+                            .map_err(|_| ClipboardError::NonText);
+                    }
+                    Err(ClipboardError::CommandFailed { detail, .. })
+                        if requested_type_is_unavailable(&detail) =>
+                    {
+                        continue;
+                    }
+                    Err(error) => return Err(error),
+                }
+            }
         }
 
+        let output = run_command(&self.read_command, &[])?;
         String::from_utf8(output.stdout).map_err(|_| ClipboardError::NonText)
     }
 
@@ -107,57 +123,110 @@ impl ClipboardBackend for SystemClipboard {
                 command: self.write_command.program.clone(),
                 detail: error.to_string(),
             })?;
-        let error_path = clipboard_error_path();
-
-        let output = Command::new("sh")
-            .arg("-c")
-            .arg(
-                "input=$1\nerr=$2\nshift 2\ncommand=$1\ncommand -v \"$command\" >/dev/null 2>&1 || exit 127\n\"$@\" < \"$input\" >/dev/null 2>\"$err\" &\n",
-            )
-            .arg("sh")
-            .arg(&input_path)
-            .arg(&error_path)
-            .arg(&self.write_command.program)
-            .args(&self.write_command.args)
-            .output()
-            .map_err(|error| ClipboardError::CommandFailed {
+        let input_file =
+            fs::File::open(&input_path).map_err(|error| ClipboardError::CommandFailed {
                 command: self.write_command.program.clone(),
                 detail: error.to_string(),
             })?;
 
+        let mut child = Command::new(&self.write_command.program)
+            .args(&self.write_command.args)
+            .stdin(Stdio::from(input_file))
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|error| match error.kind() {
+                std::io::ErrorKind::NotFound => ClipboardError::CommandNotFound {
+                    command: self.write_command.program.clone(),
+                },
+                _ => ClipboardError::CommandFailed {
+                    command: self.write_command.program.clone(),
+                    detail: error.to_string(),
+                },
+            })?;
+
         let _ = fs::remove_file(&input_path);
 
-        if !output.status.success() {
-            let _ = fs::remove_file(&error_path);
-
-            if output.status.code() == Some(127) {
-                return Err(ClipboardError::CommandNotFound {
+        for _ in 0..WRITE_FAILURE_POLL_ATTEMPTS {
+            let Some(status) = child
+                .try_wait()
+                .map_err(|error| ClipboardError::CommandFailed {
                     command: self.write_command.program.clone(),
-                });
-            }
+                    detail: error.to_string(),
+                })?
+            else {
+                thread::sleep(WRITE_FAILURE_POLL_INTERVAL);
+                continue;
+            };
 
-            return Err(ClipboardError::CommandFailed {
-                command: self.write_command.program.clone(),
-                detail: String::from_utf8_lossy(&output.stderr).trim().to_string(),
-            });
-        }
+            let output =
+                child
+                    .wait_with_output()
+                    .map_err(|error| ClipboardError::CommandFailed {
+                        command: self.write_command.program.clone(),
+                        detail: error.to_string(),
+                    })?;
 
-        for _ in 0..20 {
-            let detail = fs::read_to_string(&error_path).unwrap_or_default();
-            if !detail.trim().is_empty() {
-                let _ = fs::remove_file(&error_path);
+            if !status.success() {
                 return Err(ClipboardError::CommandFailed {
                     command: self.write_command.program.clone(),
-                    detail: detail.trim().to_string(),
+                    detail: String::from_utf8_lossy(&output.stderr).trim().to_string(),
                 });
             }
 
-            thread::sleep(Duration::from_millis(10));
+            break;
         }
 
-        let _ = fs::remove_file(&error_path);
         Ok(())
     }
+}
+
+fn run_command(
+    spec: &CommandSpec,
+    extra_args: &[String],
+) -> Result<std::process::Output, ClipboardError> {
+    let output = Command::new(&spec.program)
+        .args(&spec.args)
+        .args(extra_args)
+        .output()
+        .map_err(|error| match error.kind() {
+            std::io::ErrorKind::NotFound => ClipboardError::CommandNotFound {
+                command: spec.program.clone(),
+            },
+            _ => ClipboardError::CommandFailed {
+                command: spec.program.clone(),
+                detail: error.to_string(),
+            },
+        })?;
+
+    if !output.status.success() {
+        return Err(ClipboardError::CommandFailed {
+            command: spec.program.clone(),
+            detail: String::from_utf8_lossy(&output.stderr).trim().to_string(),
+        });
+    }
+
+    Ok(output)
+}
+
+fn default_preferred_text_types() -> Vec<String> {
+    [
+        "text/plain;charset=utf-8",
+        "text/plain;charset=utf8",
+        "text/plain",
+        "UTF8_STRING",
+        "STRING",
+        "TEXT",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+fn requested_type_is_unavailable(detail: &str) -> bool {
+    detail
+        .to_ascii_lowercase()
+        .contains("clipboard content is not available as requested type")
 }
 
 fn write_clipboard_input(text: &str) -> std::io::Result<std::path::PathBuf> {
@@ -168,10 +237,6 @@ fn write_clipboard_input(text: &str) -> std::io::Result<std::path::PathBuf> {
 
 fn clipboard_input_path() -> std::path::PathBuf {
     temp_path("clipboard-input")
-}
-
-fn clipboard_error_path() -> std::path::PathBuf {
-    temp_path("clipboard-error")
 }
 
 fn temp_path(kind: &str) -> std::path::PathBuf {

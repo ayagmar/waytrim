@@ -327,6 +327,18 @@ fn clipboard_flow_reports_unchanged_for_clean_pipeline_fixture() {
 }
 
 #[test]
+fn clipboard_flow_auto_mode_collapses_reaction_snippet_without_trailing_newline() {
+    let clipboard = MemoryClipboard::new(":rofl:\n");
+    let config = clipboard_config(Mode::Auto);
+
+    let output = run_clipboard_flow(&config, &clipboard).expect("run clipboard flow");
+
+    assert_eq!(output.status, ClipboardFlowStatus::Updated);
+    assert_eq!(clipboard.current(), ":rofl:");
+    assert_eq!(clipboard.writes(), vec![String::from(":rofl:")]);
+}
+
+#[test]
 fn clipboard_flow_repairs_heading_padding_fixture() {
     let input = fixture_input("prose/ai-terminal/heading-padding");
     let expected = fixture_output("prose/ai-terminal/heading-padding");

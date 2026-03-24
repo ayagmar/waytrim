@@ -2,16 +2,26 @@ use super::command::repair_command;
 use super::detect::{
     blockquote_prefix, is_blockquote_continuation_line, is_command_block_continuation_line,
     is_list_continuation_line, is_list_item_line, is_protected_line,
-    looks_like_aligned_columns_line, looks_like_shell_line, should_collapse_blank_line_between,
+    looks_like_aligned_columns_line, looks_like_reaction_snippet, looks_like_shell_line,
+    should_collapse_blank_line_between,
 };
 use super::policy::RepairPolicy;
 use super::report::ExplainStep;
 use super::text::{
     finish_with_newline, normalize_heading_padding, normalize_inline_spacing,
-    strip_uniform_single_leading_space,
+    normalize_reaction_snippet, strip_uniform_single_leading_space,
 };
 
 pub(crate) fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<ExplainStep>) {
+    if looks_like_reaction_snippet(input) {
+        return (
+            normalize_reaction_snippet(input),
+            vec![ExplainStep {
+                message: String::from("collapsed reaction snippet into one line"),
+            }],
+        );
+    }
+
     let input = strip_uniform_single_leading_space(input);
     let mut output_lines = Vec::new();
     let mut paragraph = Vec::new();

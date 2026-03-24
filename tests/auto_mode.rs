@@ -19,6 +19,22 @@ fn auto_falls_back_to_minimal_prose_safe_cleanup_when_ambiguous() {
 }
 
 #[test]
+fn auto_collapses_single_reaction_line_without_trailing_newline() {
+    let input = ":rofl:\n";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, ":rofl:");
+}
+
+#[test]
+fn auto_collapses_multiline_reaction_snippet_into_one_line() {
+    let input = ":rofl:\n:rofl:\n";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, ":rofl: :rofl:");
+}
+
+#[test]
 fn auto_declines_to_merge_label_plus_command_snippets() {
     let input = fixture_input("auto/ambiguous/label-plus-command");
     let output = run_waytrim(&["auto"], &input);

@@ -150,6 +150,17 @@ fn auto_watch_reports_unchanged_clean_clipboard() {
 }
 
 #[test]
+fn auto_watch_collapses_reaction_snippet_without_trailing_newline() {
+    let clipboard = MemoryClipboard::new(":rofl:\n");
+    let paths = watch_paths("watch-state-reaction");
+
+    let output = run_auto_clipboard_once(&watch_config(), &clipboard, &paths).expect("watch once");
+    assert_eq!(output.status, AutoClipboardStatus::Updated);
+    assert_eq!(clipboard.current(), ":rofl:");
+    assert_eq!(clipboard.writes(), vec![String::from(":rofl:")]);
+}
+
+#[test]
 fn auto_watch_skips_non_text_clipboard_without_erroring() {
     let clipboard = NonTextClipboard;
     let paths = watch_paths("watch-state-non-text");

@@ -1,14 +1,27 @@
 use super::command::repair_command;
 use super::detect::{
     looks_like_command, looks_like_command_transcript, looks_like_label_plus_command,
-    looks_like_prose, looks_like_soft_wrapped_prose,
+    looks_like_prose, looks_like_reaction_snippet, looks_like_soft_wrapped_prose,
 };
 use super::policy::{AutoPolicy, Mode, RepairPolicy};
 use super::prose::repair_prose;
 use super::report::{ExplainStep, RepairDecision, RepairOutcome};
-use super::text::{finish_with_newline, strip_uniform_single_leading_space};
+use super::text::{
+    finish_with_newline, normalize_reaction_snippet, strip_uniform_single_leading_space,
+};
 
 pub(crate) fn repair_auto(input: &str, policy: &RepairPolicy) -> RepairOutcome {
+    if looks_like_reaction_snippet(input) {
+        return RepairOutcome::new(
+            Mode::Auto,
+            RepairDecision::AutoMinimal,
+            normalize_reaction_snippet(input),
+            vec![ExplainStep {
+                message: String::from("detected reaction snippet; collapsed it into one line"),
+            }],
+        );
+    }
+
     if looks_like_command(input) {
         let (output, mut explain) = repair_command(input);
         explain.insert(
