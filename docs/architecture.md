@@ -12,6 +12,21 @@ waytrim is structured around a small repair core with thin delivery layers.
 
 ## Layers
 
+```mermaid
+flowchart LR
+    input["stdin / clipboard / IPC request"] --> delivery["delivery layer"]
+    delivery --> core["repair core"]
+    core --> output["stdout / clipboard / IPC response"]
+
+    subgraph delivery_surfaces["delivery surfaces"]
+        cli["CLI\nsrc/main.rs"]
+        watch["watcher CLI\nsrc/bin/waytrim-watch.rs"]
+        daemon["daemon + IPC\nsrc/bin/waytrimd.rs\nsrc/bin/waytrimctl.rs"]
+    end
+
+    delivery_surfaces --> delivery
+```
+
 ### Core library
 
 `src/core/`
@@ -104,3 +119,65 @@ These stay outside the core:
 Those layers should call the same core repair contracts rather than introducing separate cleanup logic. The current repo now includes the local service and IPC slice plus watcher-state status snapshots; Quickshell / Noctalia and Niri-specific UX remain delivery-layer work on top of those contracts.
 
 For the manual clipboard slice, `--preview` and `--explain` must remain non-mutating, `--print` must have explicit semantics, and `clipboard unchanged` should be treated as a first-class successful outcome. For always-on clipboard use, the watcher owns one original clipboard backup, exposes status through Rust-managed watcher state, and keeps manual override behavior such as `--clean-once` and `--restore-original` out of QML. Missing user config should be silent, invalid user config should warn and fall back to built-in defaults, and explicit CLI flags should always win over file config.
+
+## Data flow
+
+### Manual CLI flow
+
+```mermaid
+flowchart TD
+    args["CLI args"] --> config["load user defaults\nsrc/config.rs"]
+    config --> main["src/main.rs"]
+    stdin["stdin"] --> main
+    clipboard["SystemClipboard\nsrc/clipboard.rs"] --> main
+    main --> repair["repair_report_with_policy()"]
+    repair --> render["render / explain / plain output"]
+    render --> stdout["stdout"]
+    render --> writeback["clipboard writeback\nwhen --clipboard"]
+```
+
+### Automatic watcher flow
+
+```mermaid
+flowchart TD
+    watchcmd["waytrim-watch"] --> launcher["watch launcher\nsrc/bin/waytrim-watch.rs"]
+    launcher --> backend["clipboard event backend"]
+    backend --> hook["waytrim-watch --hook"]
+    hook --> once["run_auto_clipboard_once()"]
+    once --> read["read clipboard"]
+    read --> repair["repair_report_with_policy()"]
+    repair --> write["write cleaned clipboard"]
+    write --> state["watch-state.json"]
+    state --> status["--status / --status --json"]
+    state --> restore["--restore-original"]
+```
+
+## Clipboard event boundary
+
+The cleanup logic is already separated from the event source:
+
+- `src/watch.rs` owns one-shot watch behavior, skip-guard logic, restore behavior, and watcher state
+- `src/clipboard.rs` owns clipboard read and write operations
+- `src/bin/waytrim-watch.rs` currently owns the compositor-specific event hook because it launches `wl-paste --watch`
+
+That means a Plasma-specific watcher backend can stay clean if it only replaces the event source layer and keeps everything after `--hook` unchanged.
+
+```mermaid
+flowchart LR
+    subgraph event_source["clipboard event source"]
+        wlroots["wl-paste --watch\ncurrent"]
+        plasma["KWin / Plasma watcher\nfuture"]
+    end
+
+    event_source --> hook["waytrim-watch --hook"]
+    hook --> watchlib["src/watch.rs"]
+    watchlib --> core["repair core"]
+    watchlib --> state["watch state"]
+```
+
+This preserves the current architecture:
+
+- no compositor logic in `src/core/`
+- no separate cleanup heuristics for Plasma
+- no breakage for Niri as long as the existing wlroots path remains available
+- one watcher state model and one repair pipeline across both desktops
