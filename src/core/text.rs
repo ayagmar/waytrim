@@ -71,6 +71,10 @@ pub(crate) fn normalize_inline_spacing(line: &str) -> String {
     result.trim().to_string()
 }
 
+pub(crate) fn normalize_reaction_snippet(input: &str) -> String {
+    input.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 pub(crate) fn finish_with_newline(mut output: String) -> String {
     if !output.ends_with('\n') {
         output.push('\n');

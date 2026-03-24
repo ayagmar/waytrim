@@ -64,6 +64,20 @@ pub(crate) fn looks_like_soft_wrapped_prose(input: &str) -> bool {
         })
 }
 
+pub(crate) fn looks_like_reaction_snippet(input: &str) -> bool {
+    let mut saw_non_empty = false;
+
+    for line in input.lines().map(str::trim).filter(|line| !line.is_empty()) {
+        saw_non_empty = true;
+
+        if !is_reaction_line(line) {
+            return false;
+        }
+    }
+
+    saw_non_empty
+}
+
 pub(crate) fn looks_like_command_transcript(input: &str) -> bool {
     let non_empty: Vec<_> = input
         .lines()
@@ -192,6 +206,7 @@ pub(crate) fn is_protected_line(line: &str) -> bool {
         || line.starts_with('\t')
         || is_bullet_line(trimmed)
         || is_numbered_line(trimmed)
+        || is_reaction_line(trimmed)
 }
 
 pub(crate) fn looks_like_aligned_columns_line(line: &str) -> bool {
@@ -260,6 +275,55 @@ pub(crate) fn is_numbered_line(trimmed: &str) -> bool {
     }
 
     matches!(chars.next(), Some('.') | Some(')')) && matches!(chars.next(), Some(' '))
+}
+
+fn is_reaction_line(trimmed: &str) -> bool {
+    looks_like_shortcode_reaction_line(trimmed) || looks_like_emoji_only_line(trimmed)
+}
+
+fn looks_like_shortcode_reaction_line(trimmed: &str) -> bool {
+    let mut saw_token = false;
+
+    for token in trimmed.split_whitespace() {
+        saw_token = true;
+
+        let Some(inner) = token
+            .strip_prefix(':')
+            .and_then(|value| value.strip_suffix(':'))
+        else {
+            return false;
+        };
+
+        if inner.is_empty() {
+            return false;
+        }
+
+        if !inner.chars().all(|ch| {
+            ch.is_ascii_lowercase() || ch.is_ascii_digit() || matches!(ch, '_' | '-' | '+')
+        }) {
+            return false;
+        }
+    }
+
+    saw_token
+}
+
+fn looks_like_emoji_only_line(trimmed: &str) -> bool {
+    let mut saw_non_whitespace = false;
+
+    for ch in trimmed.chars() {
+        if ch.is_whitespace() {
+            continue;
+        }
+
+        saw_non_whitespace = true;
+
+        if ch.is_ascii() || ch.is_alphanumeric() {
+            return false;
+        }
+    }
+
+    saw_non_whitespace
 }
 
 pub(crate) fn should_collapse_blank_line_between(previous: &str, next: &str) -> bool {

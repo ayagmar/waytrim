@@ -243,6 +243,22 @@ fn prose_collapses_useless_blank_lines_inside_wrapped_paragraph_fixture() {
 }
 
 #[test]
+fn prose_collapses_shortcode_only_reaction_lines_into_one_line() {
+    let input = ":rofl:\n:rofl:\n";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, ":rofl: :rofl:");
+}
+
+#[test]
+fn prose_collapses_emoji_only_reaction_lines_into_one_line() {
+    let input = "🤣\n🤣\n";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, "🤣 🤣");
+}
+
+#[test]
 fn prose_preserves_real_section_break_fixture() {
     let input = fixture_input("prose/negative/section-break");
     let output = run_waytrim(&["prose"], &input);
