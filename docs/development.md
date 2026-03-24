@@ -161,8 +161,9 @@ You can override the install root with `WAYTRIM_INSTALL_ROOT=/some/prefix`.
 
 ```bash
 cargo fmt --check
-cargo test
 cargo clippy --all-targets --all-features -- -D warnings
+cargo test
+shellcheck scripts/reinstall-local contrib/niri/waytrim-clipboard-prose contrib/niri/waytrim-watch-session
 ```
 
 ## Repository layout

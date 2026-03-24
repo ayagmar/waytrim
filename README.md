@@ -183,8 +183,9 @@ See `docs/integrations.md` for the JSON contract, service usage, and desktop wor
 
 ```bash
 cargo fmt --check
-cargo test
 cargo clippy --all-targets --all-features -- -D warnings
+cargo test
+shellcheck scripts/reinstall-local contrib/niri/waytrim-clipboard-prose contrib/niri/waytrim-watch-session
 ```
 
 ## Automatic clipboard workflow
