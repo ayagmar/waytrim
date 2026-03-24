@@ -1,6 +1,6 @@
 use std::fmt;
 use std::fs;
-use std::process::{self, Command};
+use std::process::{self, Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -114,55 +114,54 @@ impl ClipboardBackend for SystemClipboard {
                 command: self.write_command.program.clone(),
                 detail: error.to_string(),
             })?;
-        let error_path = clipboard_error_path();
-
-        let output = Command::new("sh")
-            .arg("-c")
-            .arg(
-                "input=$1\nerr=$2\nshift 2\ncommand=$1\ncommand -v \"$command\" >/dev/null 2>&1 || exit 127\n\"$@\" < \"$input\" >/dev/null 2>\"$err\" &\n",
-            )
-            .arg("sh")
-            .arg(&input_path)
-            .arg(&error_path)
-            .arg(&self.write_command.program)
-            .args(&self.write_command.args)
-            .output()
-            .map_err(|error| ClipboardError::CommandFailed {
+        let input_file =
+            fs::File::open(&input_path).map_err(|error| ClipboardError::CommandFailed {
                 command: self.write_command.program.clone(),
                 detail: error.to_string(),
             })?;
 
-        let _ = fs::remove_file(&input_path);
-
-        if !output.status.success() {
-            let _ = fs::remove_file(&error_path);
-
-            if output.status.code() == Some(127) {
-                return Err(ClipboardError::CommandNotFound {
+        let mut child = Command::new(&self.write_command.program)
+            .args(&self.write_command.args)
+            .stdin(Stdio::from(input_file))
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|error| match error.kind() {
+                std::io::ErrorKind::NotFound => ClipboardError::CommandNotFound {
                     command: self.write_command.program.clone(),
-                });
-            }
+                },
+                _ => ClipboardError::CommandFailed {
+                    command: self.write_command.program.clone(),
+                    detail: error.to_string(),
+                },
+            })?;
 
-            return Err(ClipboardError::CommandFailed {
+        let _ = fs::remove_file(&input_path);
+        thread::sleep(Duration::from_millis(5));
+
+        if let Some(status) = child
+            .try_wait()
+            .map_err(|error| ClipboardError::CommandFailed {
                 command: self.write_command.program.clone(),
-                detail: String::from_utf8_lossy(&output.stderr).trim().to_string(),
-            });
-        }
+                detail: error.to_string(),
+            })?
+        {
+            let output =
+                child
+                    .wait_with_output()
+                    .map_err(|error| ClipboardError::CommandFailed {
+                        command: self.write_command.program.clone(),
+                        detail: error.to_string(),
+                    })?;
 
-        for _ in 0..20 {
-            let detail = fs::read_to_string(&error_path).unwrap_or_default();
-            if !detail.trim().is_empty() {
-                let _ = fs::remove_file(&error_path);
+            if !status.success() {
                 return Err(ClipboardError::CommandFailed {
                     command: self.write_command.program.clone(),
-                    detail: detail.trim().to_string(),
+                    detail: String::from_utf8_lossy(&output.stderr).trim().to_string(),
                 });
             }
-
-            thread::sleep(Duration::from_millis(10));
         }
 
-        let _ = fs::remove_file(&error_path);
         Ok(())
     }
 }
@@ -232,10 +231,6 @@ fn write_clipboard_input(text: &str) -> std::io::Result<std::path::PathBuf> {
 
 fn clipboard_input_path() -> std::path::PathBuf {
     temp_path("clipboard-input")
-}
-
-fn clipboard_error_path() -> std::path::PathBuf {
-    temp_path("clipboard-error")
 }
 
 fn temp_path(kind: &str) -> std::path::PathBuf {

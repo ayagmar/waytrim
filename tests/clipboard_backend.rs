@@ -180,3 +180,19 @@ fn system_backend_does_not_wait_for_long_lived_clipboard_process() {
         start.elapsed()
     );
 }
+
+#[test]
+fn system_backend_reports_quick_write_failures() {
+    let clipboard = SystemClipboard::with_commands(
+        CommandSpec::new("waytrim-missing-wl-paste"),
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg("echo 'permission denied' >&2; exit 1"),
+    );
+
+    let error = clipboard
+        .write_text("copied without waiting\n")
+        .expect_err("write should fail");
+
+    assert!(error.to_string().contains("permission denied"));
+}
