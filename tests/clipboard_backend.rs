@@ -72,6 +72,57 @@ fn system_backend_reports_invalid_utf8_reads_clearly() {
 }
 
 #[test]
+fn system_backend_skips_non_text_clipboard_offers_without_reading_payload() {
+    let read_marker_path = temp_file_path("clipboard-read-marker");
+    let clipboard = SystemClipboard::with_commands_and_type_list(
+        CommandSpec::new("sh").with_arg("-c").with_arg(format!(
+            "touch '{}'; sleep 2; printf 'should not be read'",
+            read_marker_path.display()
+        )),
+        CommandSpec::new("waytrim-missing-wl-copy"),
+        Some(
+            CommandSpec::new("sh")
+                .with_arg("-c")
+                .with_arg("printf 'image/png\nimage/jpeg\n'"),
+        ),
+    );
+
+    let start = Instant::now();
+    let error = clipboard.read_text().expect_err("expected non-text error");
+
+    assert!(matches!(error, ClipboardError::NonText));
+    assert!(
+        start.elapsed() < Duration::from_secs(1),
+        "non-text probe took too long: {:?}",
+        start.elapsed()
+    );
+    assert!(
+        !read_marker_path.exists(),
+        "clipboard payload should not be read"
+    );
+}
+
+#[test]
+fn system_backend_prefers_plain_text_type_before_reading_payload() {
+    let clipboard = SystemClipboard::with_commands_and_type_list(
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg(
+                "if [ \"$1\" = \"--type\" ] && [ \"$2\" = \"text/plain;charset=utf-8\" ]; then printf 'hello'; else echo 'wrong type' >&2; exit 1; fi",
+            )
+            .with_arg("sh"),
+        CommandSpec::new("waytrim-missing-wl-copy"),
+        Some(
+            CommandSpec::new("sh")
+                .with_arg("-c")
+                .with_arg("printf 'image/png\ntext/plain;charset=utf-8\n'"),
+        ),
+    );
+
+    assert_eq!(clipboard.read_text().expect("read clipboard"), "hello");
+}
+
+#[test]
 fn system_backend_writes_text_through_configured_command() {
     let output_path = temp_file_path("clipboard-write-output");
     let clipboard = SystemClipboard::with_commands(

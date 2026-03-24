@@ -141,6 +141,7 @@ Behavior:
 - `waytrim prose --clipboard --explain` explains changes without mutating the clipboard
 - `clipboard unchanged` is a first-class success outcome when no effective change is needed
 - empty clipboard input returns a clear success message instead of crashing
+- non-text clipboard offers such as images are skipped before payload read, so image copies do not trigger slow text decoding paths
 - `--clipboard --preview --print` is rejected as ambiguous
 - `--clipboard --explain --print` is rejected as ambiguous
 
@@ -206,6 +207,7 @@ waytrim-watch --status --json
 
 Behavior:
 - watches clipboard changes through `wl-paste --watch`
+- probes offered clipboard MIME types first and skips non-text content such as images without reading the payload
 - repairs new clipboard text through the same core logic
 - defaults to conservative `auto` mode unless CLI mode overrides it
 - uses the existing repair policy surface from config
