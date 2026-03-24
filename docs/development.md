@@ -136,7 +136,7 @@ Notes:
 - `clipboard unchanged` should be reported clearly when nothing changes
 - empty clipboard input should report a clear success message
 - clipboard integration depends on `wl-paste` and `wl-copy`
-- the Wayland backend probes `wl-paste --list-types` first and skips non-text offers such as images before any payload read
+- the Wayland backend requests preferred plain-text clipboard types first and skips non-text offers such as images without reading binary payloads
 - explicit overrides `--no-preview`, `--no-explain`, `--no-print`, and `--no-clipboard` can disable config-provided defaults
 - the IPC socket defaults to `XDG_RUNTIME_DIR/waytrim/waytrim.sock`
 - when `XDG_RUNTIME_DIR` is missing, the fallback is `${TMPDIR:-/tmp}/waytrim-<uid>/waytrim.sock`

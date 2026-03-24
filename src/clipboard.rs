@@ -55,31 +55,31 @@ impl CommandSpec {
 pub struct SystemClipboard {
     read_command: CommandSpec,
     write_command: CommandSpec,
-    list_types_command: Option<CommandSpec>,
+    preferred_text_types: Option<Vec<String>>,
 }
 
 impl SystemClipboard {
     pub fn new() -> Self {
-        Self::with_commands_and_type_list(
+        Self::with_commands_and_text_types(
             CommandSpec::new("wl-paste"),
             CommandSpec::new("wl-copy"),
-            Some(CommandSpec::new("wl-paste").with_arg("--list-types")),
+            Some(default_preferred_text_types()),
         )
     }
 
     pub fn with_commands(read_command: CommandSpec, write_command: CommandSpec) -> Self {
-        Self::with_commands_and_type_list(read_command, write_command, None)
+        Self::with_commands_and_text_types(read_command, write_command, None)
     }
 
-    pub fn with_commands_and_type_list(
+    pub fn with_commands_and_text_types(
         read_command: CommandSpec,
         write_command: CommandSpec,
-        list_types_command: Option<CommandSpec>,
+        preferred_text_types: Option<Vec<String>>,
     ) -> Self {
         Self {
             read_command,
             write_command,
-            list_types_command,
+            preferred_text_types,
         }
     }
 }
@@ -92,19 +92,27 @@ impl Default for SystemClipboard {
 
 impl ClipboardBackend for SystemClipboard {
     fn read_text(&self) -> Result<String, ClipboardError> {
-        let mut extra_args = Vec::new();
+        if let Some(preferred_text_types) = &self.preferred_text_types {
+            for text_type in preferred_text_types {
+                let extra_args = [String::from("--type"), text_type.clone()];
+                match run_command(&self.read_command, &extra_args) {
+                    Ok(output) => {
+                        return String::from_utf8(output.stdout)
+                            .map_err(|_| ClipboardError::NonText);
+                    }
+                    Err(ClipboardError::CommandFailed { detail, .. })
+                        if requested_type_is_unavailable(&detail) =>
+                    {
+                        continue;
+                    }
+                    Err(error) => return Err(error),
+                }
+            }
 
-        if let Some(list_types_command) = &self.list_types_command {
-            let output = run_command(list_types_command, &[])?;
-            let offered_types = String::from_utf8_lossy(&output.stdout);
-            let Some(text_type) = preferred_text_type(&offered_types) else {
-                return Err(ClipboardError::NonText);
-            };
-            extra_args.push(String::from("--type"));
-            extra_args.push(text_type);
+            return Err(ClipboardError::NonText);
         }
 
-        let output = run_command(&self.read_command, &extra_args)?;
+        let output = run_command(&self.read_command, &[])?;
         String::from_utf8(output.stdout).map_err(|_| ClipboardError::NonText)
     }
 
@@ -194,33 +202,24 @@ fn run_command(
     Ok(output)
 }
 
-fn preferred_text_type(offered_types: &str) -> Option<String> {
-    let types: Vec<_> = offered_types
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .collect();
-
-    for preferred in [
+fn default_preferred_text_types() -> Vec<String> {
+    [
         "text/plain;charset=utf-8",
         "text/plain;charset=utf8",
         "text/plain",
         "UTF8_STRING",
         "STRING",
         "TEXT",
-    ] {
-        if let Some(matched) = types
-            .iter()
-            .find(|value| value.eq_ignore_ascii_case(preferred))
-        {
-            return Some((*matched).to_string());
-        }
-    }
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
 
-    types
-        .into_iter()
-        .find(|value| value.to_ascii_lowercase().starts_with("text/plain;"))
-        .map(str::to_string)
+fn requested_type_is_unavailable(detail: &str) -> bool {
+    detail
+        .to_ascii_lowercase()
+        .contains("clipboard content is not available as requested type")
 }
 
 fn write_clipboard_input(text: &str) -> std::io::Result<std::path::PathBuf> {

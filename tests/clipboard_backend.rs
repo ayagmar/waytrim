@@ -74,17 +74,14 @@ fn system_backend_reports_invalid_utf8_reads_clearly() {
 #[test]
 fn system_backend_skips_non_text_clipboard_offers_without_reading_payload() {
     let read_marker_path = temp_file_path("clipboard-read-marker");
-    let clipboard = SystemClipboard::with_commands_and_type_list(
+    let clipboard = SystemClipboard::with_commands_and_text_types(
         CommandSpec::new("sh").with_arg("-c").with_arg(format!(
-            "touch '{}'; sleep 2; printf 'should not be read'",
-            read_marker_path.display()
-        )),
+            "if [ \"$1\" = \"--type\" ]; then echo \"Clipboard content is not available as requested type '$2'\" >&2; exit 1; fi; touch '{}'; sleep 2; printf 'should not be read'",
+            read_marker_path.display(),
+        ))
+        .with_arg("sh"),
         CommandSpec::new("waytrim-missing-wl-copy"),
-        Some(
-            CommandSpec::new("sh")
-                .with_arg("-c")
-                .with_arg("printf 'image/png\nimage/jpeg\n'"),
-        ),
+        Some(vec![String::from("text/plain;charset=utf-8"), String::from("text/plain")]),
     );
 
     let start = Instant::now();
@@ -104,7 +101,7 @@ fn system_backend_skips_non_text_clipboard_offers_without_reading_payload() {
 
 #[test]
 fn system_backend_prefers_plain_text_type_before_reading_payload() {
-    let clipboard = SystemClipboard::with_commands_and_type_list(
+    let clipboard = SystemClipboard::with_commands_and_text_types(
         CommandSpec::new("sh")
             .with_arg("-c")
             .with_arg(
@@ -112,14 +109,26 @@ fn system_backend_prefers_plain_text_type_before_reading_payload() {
             )
             .with_arg("sh"),
         CommandSpec::new("waytrim-missing-wl-copy"),
-        Some(
-            CommandSpec::new("sh")
-                .with_arg("-c")
-                .with_arg("printf 'image/png\ntext/plain;charset=utf-8\n'"),
-        ),
+        Some(vec![String::from("text/plain;charset=utf-8"), String::from("text/plain")]),
     );
 
     assert_eq!(clipboard.read_text().expect("read clipboard"), "hello");
+}
+
+#[test]
+fn system_backend_falls_back_to_next_text_type_when_preferred_one_is_unavailable() {
+    let clipboard = SystemClipboard::with_commands_and_text_types(
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg(
+                "if [ \"$1\" = \"--type\" ] && [ \"$2\" = \"text/plain;charset=utf-8\" ]; then echo \"Clipboard content is not available as requested type '$2'\" >&2; exit 1; fi; if [ \"$1\" = \"--type\" ] && [ \"$2\" = \"text/plain\" ]; then printf 'fallback'; exit 0; fi; echo 'wrong type' >&2; exit 1",
+            )
+            .with_arg("sh"),
+        CommandSpec::new("waytrim-missing-wl-copy"),
+        Some(vec![String::from("text/plain;charset=utf-8"), String::from("text/plain")]),
+    );
+
+    assert_eq!(clipboard.read_text().expect("read clipboard"), "fallback");
 }
 
 #[test]
