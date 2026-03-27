@@ -202,3 +202,70 @@ fn auto_declines_to_rewrite_indented_command_example_fixture() {
         fixture_output("auto/ambiguous/indented-command-example")
     );
 }
+
+#[test]
+fn auto_preserves_openapi_yaml_structure() {
+    let input = "\
+openapi: 3.0.0
+info:
+  title: Example API
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      summary: List pets
+";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn auto_preserves_single_root_openapi_yaml_structure() {
+    let input = "\
+openapi:
+  info:
+    title: Example API
+    version: 1.0.0
+";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn auto_preserves_two_line_yaml_mapping_structure() {
+    let input = "\
+name: Example API
+version: 1.0.0
+";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn auto_preserves_yaml_sequence_structure() {
+    let input = "\
+services:
+  - name: api
+    port: 8080
+  - name: web
+    port: 3000
+";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn auto_preserves_yaml_scalar_sequence_under_mapping() {
+    let input = "\
+tags:
+  - alpha
+  - beta
+";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, input);
+}

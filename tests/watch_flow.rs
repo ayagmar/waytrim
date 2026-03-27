@@ -150,6 +150,17 @@ fn auto_watch_reports_unchanged_clean_clipboard() {
 }
 
 #[test]
+fn auto_watch_does_not_rewrite_clean_clipboard_for_trailing_newline_only() {
+    let clipboard = MemoryClipboard::new("Already clean text.");
+    let paths = watch_paths("watch-state-unchanged-no-newline");
+
+    let output = run_auto_clipboard_once(&watch_config(), &clipboard, &paths).expect("watch once");
+    assert_eq!(output.status, AutoClipboardStatus::Unchanged);
+    assert_eq!(clipboard.current(), "Already clean text.");
+    assert!(clipboard.writes().is_empty());
+}
+
+#[test]
 fn auto_watch_collapses_reaction_snippet_without_trailing_newline() {
     let clipboard = MemoryClipboard::new(":rofl:\n");
     let paths = watch_paths("watch-state-reaction");

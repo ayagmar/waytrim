@@ -75,6 +75,33 @@ pub(crate) fn normalize_reaction_snippet(input: &str) -> String {
     input.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+pub(crate) fn minimal_line_preserving_cleanup(input: &str) -> String {
+    let input = strip_uniform_single_leading_space(input);
+    let mut output = Vec::new();
+    let mut blank_count = 0;
+
+    for line in input.lines() {
+        let trimmed_end = line.trim_end();
+
+        if trimmed_end.trim().is_empty() {
+            blank_count += 1;
+            if blank_count <= 1 {
+                output.push(String::new());
+            }
+            continue;
+        }
+
+        blank_count = 0;
+        output.push(trimmed_end.to_string());
+    }
+
+    while output.last().is_some_and(|line| line.is_empty()) {
+        output.pop();
+    }
+
+    finish_with_newline(output.join("\n"))
+}
+
 pub(crate) fn finish_with_newline(mut output: String) -> String {
     if !output.ends_with('\n') {
         output.push('\n');

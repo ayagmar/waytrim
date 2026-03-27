@@ -7,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 
 use crate::clipboard::{ClipboardBackend, ClipboardError};
+use crate::core::input_looks_like_reaction_snippet;
 use crate::{Mode, RepairPolicy, default_runtime_dir, repair_report_with_policy};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -275,7 +276,11 @@ fn run_clipboard_once_inner<B: ClipboardBackend>(
     }
 
     let report = repair_report_with_policy(&input, config.mode, &config.policy);
-    if !report.changed {
+    let newline_only_change = normalize_skip_guard_text(&input)
+        == normalize_skip_guard_text(&report.output)
+        && input != report.output;
+
+    if !report.changed || (newline_only_change && !input_looks_like_reaction_snippet(&input)) {
         record_event(
             &mut state,
             Some(config.mode),

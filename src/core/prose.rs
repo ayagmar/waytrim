@@ -3,13 +3,13 @@ use super::detect::{
     blockquote_prefix, is_blockquote_continuation_line, is_command_block_continuation_line,
     is_list_continuation_line, is_list_item_line, is_protected_line,
     looks_like_aligned_columns_line, looks_like_reaction_snippet, looks_like_shell_line,
-    should_collapse_blank_line_between,
+    looks_like_yaml_mapping_input, should_collapse_blank_line_between,
 };
 use super::policy::RepairPolicy;
 use super::report::ExplainStep;
 use super::text::{
-    finish_with_newline, normalize_heading_padding, normalize_inline_spacing,
-    normalize_reaction_snippet, strip_uniform_single_leading_space,
+    finish_with_newline, minimal_line_preserving_cleanup, normalize_heading_padding,
+    normalize_inline_spacing, normalize_reaction_snippet, strip_uniform_single_leading_space,
 };
 
 pub(crate) fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<ExplainStep>) {
@@ -18,6 +18,15 @@ pub(crate) fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<E
             normalize_reaction_snippet(input),
             vec![ExplainStep {
                 message: String::from("collapsed reaction snippet into one line"),
+            }],
+        );
+    }
+
+    if looks_like_yaml_mapping_input(input) {
+        return (
+            minimal_line_preserving_cleanup(input),
+            vec![ExplainStep {
+                message: String::from("preserved structured yaml-like text"),
             }],
         );
     }

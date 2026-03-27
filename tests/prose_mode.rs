@@ -316,3 +316,70 @@ fn prose_repairs_copy_induced_spacing_noise_inside_paragraph_fixture() {
         fixture_output("prose/ai-terminal/spacing-noise-paragraph")
     );
 }
+
+#[test]
+fn prose_preserves_openapi_yaml_structure() {
+    let input = "\
+openapi: 3.0.0
+info:
+  title: Example API
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      summary: List pets
+";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn prose_preserves_single_root_openapi_yaml_structure() {
+    let input = "\
+openapi:
+  info:
+    title: Example API
+    version: 1.0.0
+";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn prose_preserves_two_line_yaml_mapping_structure() {
+    let input = "\
+name: Example API
+version: 1.0.0
+";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn prose_preserves_yaml_sequence_structure() {
+    let input = "\
+services:
+  - name: api
+    port: 8080
+  - name: web
+    port: 3000
+";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn prose_preserves_yaml_scalar_sequence_under_mapping() {
+    let input = "\
+tags:
+  - alpha
+  - beta
+";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
+}

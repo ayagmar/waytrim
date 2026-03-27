@@ -25,6 +25,10 @@ pub(crate) fn looks_like_command_line_after_label(line: &str) -> bool {
 }
 
 pub(crate) fn looks_like_prose(input: &str) -> bool {
+    if looks_like_yaml_mapping_input(input) {
+        return false;
+    }
+
     let lines: Vec<_> = input
         .lines()
         .map(str::trim)
@@ -62,6 +66,114 @@ pub(crate) fn looks_like_soft_wrapped_prose(input: &str) -> bool {
                 && !looks_like_aligned_columns_line(line)
                 && line.contains(' ')
         })
+}
+
+pub(crate) fn looks_like_yaml_mapping_input(input: &str) -> bool {
+    let lines: Vec<_> = input
+        .lines()
+        .map(str::trim_end)
+        .filter(|line| !line.trim().is_empty())
+        .collect();
+
+    if lines.len() < 2 {
+        return false;
+    }
+
+    let yaml_lines = lines
+        .iter()
+        .filter(|line| looks_like_yaml_line(line))
+        .count();
+    let top_level_mapping_lines = lines
+        .iter()
+        .filter(|line| !line.starts_with(char::is_whitespace) && looks_like_yaml_mapping_line(line))
+        .count();
+    let nested_yaml_lines = lines
+        .iter()
+        .filter(|line| line.starts_with(char::is_whitespace) && looks_like_yaml_line(line))
+        .count();
+    let sequence_mapping_lines = lines
+        .iter()
+        .filter(|line| looks_like_yaml_sequence_mapping_line(line))
+        .count();
+
+    let has_two_line_mapping = lines.len() == 2 && top_level_mapping_lines == 2;
+    let has_mapping_block = top_level_mapping_lines >= 2;
+    let has_single_root_nested_shape = top_level_mapping_lines == 1
+        && nested_yaml_lines >= 1
+        && lines.first().is_some_and(|line| line.trim().ends_with(':'));
+    let has_sequence_block =
+        sequence_mapping_lines >= 2 || sequence_mapping_lines >= 1 && nested_yaml_lines >= 1;
+
+    (has_two_line_mapping
+        || has_mapping_block
+        || has_single_root_nested_shape
+        || has_sequence_block)
+        && yaml_lines * 2 >= lines.len()
+}
+
+fn looks_like_yaml_line(line: &str) -> bool {
+    looks_like_yaml_mapping_line(line)
+        || looks_like_yaml_sequence_mapping_line(line)
+        || looks_like_indented_yaml_sequence_scalar_line(line)
+}
+
+fn looks_like_yaml_mapping_line(line: &str) -> bool {
+    let trimmed = line.trim();
+
+    if trimmed.is_empty()
+        || trimmed.starts_with("```")
+        || trimmed.starts_with('>')
+        || trimmed.starts_with('#')
+        || trimmed.starts_with('-')
+    {
+        return false;
+    }
+
+    looks_like_yaml_mapping_fragment(trimmed)
+}
+
+fn looks_like_yaml_sequence_mapping_line(line: &str) -> bool {
+    let trimmed = line.trim();
+    let Some(item) = trimmed.strip_prefix("- ") else {
+        return false;
+    };
+
+    looks_like_yaml_mapping_fragment(item)
+}
+
+fn looks_like_indented_yaml_sequence_scalar_line(line: &str) -> bool {
+    if !line.starts_with(char::is_whitespace) {
+        return false;
+    }
+
+    let trimmed = line.trim();
+    let Some(item) = trimmed.strip_prefix("- ") else {
+        return false;
+    };
+
+    looks_like_yaml_scalar(item)
+}
+
+fn looks_like_yaml_mapping_fragment(fragment: &str) -> bool {
+    let Some((key, rest)) = fragment.split_once(':') else {
+        return false;
+    };
+
+    is_yaml_key(key) && (rest.is_empty() || rest.starts_with(' '))
+}
+
+fn is_yaml_key(key: &str) -> bool {
+    !key.is_empty() && !key.chars().any(char::is_whitespace)
+}
+
+fn looks_like_yaml_scalar(value: &str) -> bool {
+    let trimmed = value.trim();
+
+    !trimmed.is_empty()
+        && !trimmed.starts_with('#')
+        && !trimmed.starts_with("```")
+        && !trimmed.contains(": ")
+        && !trimmed.ends_with(':')
 }
 
 pub(crate) fn looks_like_reaction_snippet(input: &str) -> bool {
