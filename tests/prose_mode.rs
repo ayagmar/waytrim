@@ -346,3 +346,40 @@ openapi:
 
     assert_eq!(output, input);
 }
+
+#[test]
+fn prose_preserves_two_line_yaml_mapping_structure() {
+    let input = "\
+name: Example API
+version: 1.0.0
+";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn prose_preserves_yaml_sequence_structure() {
+    let input = "\
+services:
+  - name: api
+    port: 8080
+  - name: web
+    port: 3000
+";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn prose_preserves_yaml_scalar_sequence_under_mapping() {
+    let input = "\
+tags:
+  - alpha
+  - beta
+";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
+}
