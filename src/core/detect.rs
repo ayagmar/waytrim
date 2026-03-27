@@ -92,7 +92,12 @@ pub(crate) fn looks_like_yaml_mapping_input(input: &str) -> bool {
         .filter(|line| line.starts_with(char::is_whitespace) && looks_like_yaml_mapping_line(line))
         .count();
 
-    top_level_lines >= 2 && nested_lines >= 1 && mapping_lines * 2 >= lines.len()
+    let has_multi_root_shape = top_level_lines >= 2 && nested_lines >= 1;
+    let has_single_root_nested_shape = top_level_lines == 1
+        && nested_lines >= 2
+        && lines.first().is_some_and(|line| line.trim().ends_with(':'));
+
+    (has_multi_root_shape || has_single_root_nested_shape) && mapping_lines * 2 >= lines.len()
 }
 
 fn looks_like_yaml_mapping_line(line: &str) -> bool {

@@ -219,3 +219,16 @@ paths:
 
     assert_eq!(output, input);
 }
+
+#[test]
+fn auto_preserves_single_root_openapi_yaml_structure() {
+    let input = "\
+openapi:
+  info:
+    title: Example API
+    version: 1.0.0
+";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, input);
+}

@@ -121,6 +121,41 @@ fn system_backend_skips_image_only_clipboards_without_reading_payload() {
 }
 
 #[test]
+fn system_backend_skips_mixed_image_clipboards_without_reading_payload() {
+    let read_marker_path = temp_file_path("clipboard-mixed-image-read-marker");
+    let clipboard = SystemClipboard::with_commands_and_text_types_and_type_list(
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg(format!(
+                "if [ \"$1\" = \"--type\" ]; then echo \"Clipboard content is not available as requested type '$2'\" >&2; exit 1; fi; touch '{}'; sleep 2; printf 'mixed image payload should not be read'",
+                read_marker_path.display(),
+            ))
+            .with_arg("sh"),
+        CommandSpec::new("waytrim-missing-wl-copy"),
+        Some(
+            CommandSpec::new("sh")
+                .with_arg("-c")
+                .with_arg("printf 'image/png\ntext/uri-list\n'"),
+        ),
+        Some(vec![String::from("text/plain;charset=utf-8"), String::from("text/plain")]),
+    );
+
+    let start = Instant::now();
+    let error = clipboard.read_text().expect_err("expected non-text error");
+
+    assert!(matches!(error, ClipboardError::NonText));
+    assert!(
+        start.elapsed() < Duration::from_secs(1),
+        "mixed image clipboard probe took too long: {:?}",
+        start.elapsed()
+    );
+    assert!(
+        !read_marker_path.exists(),
+        "mixed image clipboard payload should not be read"
+    );
+}
+
+#[test]
 fn system_backend_prefers_plain_text_type_before_reading_payload() {
     let clipboard = SystemClipboard::with_commands_and_text_types(
         CommandSpec::new("sh")
@@ -189,6 +224,27 @@ fn system_backend_falls_back_to_untyped_read_when_listed_text_type_is_not_prefer
         clipboard.read_text().expect("read clipboard"),
         "fallback from text/html offer"
     );
+}
+
+#[test]
+fn system_backend_prefers_custom_text_type_from_listed_offers() {
+    let clipboard = SystemClipboard::with_commands_and_text_types_and_type_list(
+        CommandSpec::new("sh")
+            .with_arg("-c")
+            .with_arg(
+                "if [ \"$1\" = \"--type\" ] && [ \"$2\" = \"text/markdown\" ]; then printf 'markdown'; exit 0; fi; echo 'wrong type' >&2; exit 1",
+            )
+            .with_arg("sh"),
+        CommandSpec::new("waytrim-missing-wl-copy"),
+        Some(
+            CommandSpec::new("sh")
+                .with_arg("-c")
+                .with_arg("printf 'text/markdown\ntext/plain\n'"),
+        ),
+        Some(vec![String::from("text/markdown"), String::from("text/plain")]),
+    );
+
+    assert_eq!(clipboard.read_text().expect("read clipboard"), "markdown");
 }
 
 #[test]
