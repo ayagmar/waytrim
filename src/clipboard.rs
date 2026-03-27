@@ -113,32 +113,31 @@ impl Default for SystemClipboard {
 impl ClipboardBackend for SystemClipboard {
     fn read_text(&self) -> Result<String, ClipboardError> {
         if let Some(preferred_text_types) = &self.preferred_text_types {
-            if let Some(list_types_command) = &self.list_types_command {
-                if let Ok(offered_types) = list_offered_types(list_types_command) {
-                    if !offered_types.is_empty() {
-                        if let Some(text_type) =
-                            preferred_offered_text_type(&offered_types, preferred_text_types)
-                        {
-                            let extra_args = [String::from("--type"), text_type];
-                            match run_command(&self.read_command, &extra_args) {
-                                Ok(output) => {
-                                    return String::from_utf8(output.stdout)
-                                        .map_err(|_| ClipboardError::NonText);
-                                }
-                                Err(ClipboardError::CommandFailed { detail, .. })
-                                    if requested_type_is_unavailable(&detail) => {}
-                                Err(error) => return Err(error),
-                            }
+            if let Some(list_types_command) = &self.list_types_command
+                && let Ok(offered_types) = list_offered_types(list_types_command)
+                && !offered_types.is_empty()
+            {
+                if let Some(text_type) =
+                    preferred_offered_text_type(&offered_types, preferred_text_types)
+                {
+                    let extra_args = [String::from("--type"), text_type];
+                    match run_command(&self.read_command, &extra_args) {
+                        Ok(output) => {
+                            return String::from_utf8(output.stdout)
+                                .map_err(|_| ClipboardError::NonText);
                         }
-
-                        if !clipboard_offers_text(&offered_types, preferred_text_types) {
-                            return Err(ClipboardError::NonText);
-                        }
-
-                        if !clipboard_offers_only_text(&offered_types, preferred_text_types) {
-                            return Err(ClipboardError::NonText);
-                        }
+                        Err(ClipboardError::CommandFailed { detail, .. })
+                            if requested_type_is_unavailable(&detail) => {}
+                        Err(error) => return Err(error),
                     }
+                }
+
+                if !clipboard_offers_text(&offered_types, preferred_text_types) {
+                    return Err(ClipboardError::NonText);
+                }
+
+                if !clipboard_offers_only_text(&offered_types, preferred_text_types) {
+                    return Err(ClipboardError::NonText);
                 }
             }
 
@@ -311,14 +310,11 @@ fn clipboard_offers_only_text(offered_types: &[String], preferred_text_types: &[
 }
 
 fn text_offer_kind(offered: &str, preferred_text_types: &[String]) -> Option<()> {
-    let preferred_set = preferred_text_types
-        .iter()
-        .map(|value| value.to_ascii_lowercase())
-        .collect::<Vec<_>>();
-
     let lower = offered.to_ascii_lowercase();
 
-    (preferred_set.iter().any(|preferred| preferred == &lower)
+    (preferred_text_types
+        .iter()
+        .any(|preferred| offered.eq_ignore_ascii_case(preferred))
         || lower.starts_with("text/")
         || lower.starts_with("text;")
         || lower.starts_with("text/plain;")

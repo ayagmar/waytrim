@@ -280,7 +280,7 @@ fn run_clipboard_once_inner<B: ClipboardBackend>(
         == normalize_skip_guard_text(&report.output)
         && input != report.output;
 
-    if !report.changed || newline_only_change && !input_looks_like_reaction_snippet(&input) {
+    if !report.changed || (newline_only_change && !input_looks_like_reaction_snippet(&input)) {
         record_event(
             &mut state,
             Some(config.mode),
