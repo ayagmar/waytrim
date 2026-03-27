@@ -316,3 +316,20 @@ fn prose_repairs_copy_induced_spacing_noise_inside_paragraph_fixture() {
         fixture_output("prose/ai-terminal/spacing-noise-paragraph")
     );
 }
+
+#[test]
+fn prose_preserves_openapi_yaml_structure() {
+    let input = "\
+openapi: 3.0.0
+info:
+  title: Example API
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      summary: List pets
+";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
+}

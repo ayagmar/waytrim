@@ -13,6 +13,7 @@ pub use report::{ExplainStep, RepairDecision, RepairReport, RepairResult};
 
 use auto::repair_auto;
 use command::repair_command;
+use detect::looks_like_reaction_snippet;
 use prose::repair_prose;
 
 pub fn repair(input: &str, mode: Mode) -> RepairResult {
@@ -55,18 +56,22 @@ pub fn repair_report_with_policy(input: &str, mode: Mode, policy: &RepairPolicy)
     }
 }
 
+pub(crate) fn input_looks_like_reaction_snippet(input: &str) -> bool {
+    looks_like_reaction_snippet(input)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{RepairDecision, repair, repair_report};
-    use crate::core::auto::minimal_prose_safe_cleanup;
     use crate::core::policy::Mode;
+    use crate::core::text::minimal_line_preserving_cleanup;
 
     #[test]
     fn auto_falls_back_to_minimal_cleanup_for_ambiguous_input() {
         let input = "value one  \n\n\nvalue two\n";
         let result = repair(input, Mode::Auto);
 
-        assert_eq!(result.output, minimal_prose_safe_cleanup(input));
+        assert_eq!(result.output, minimal_line_preserving_cleanup(input));
     }
 
     #[test]

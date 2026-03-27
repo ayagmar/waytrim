@@ -25,6 +25,10 @@ pub(crate) fn looks_like_command_line_after_label(line: &str) -> bool {
 }
 
 pub(crate) fn looks_like_prose(input: &str) -> bool {
+    if looks_like_yaml_mapping_input(input) {
+        return false;
+    }
+
     let lines: Vec<_> = input
         .lines()
         .map(str::trim)
@@ -62,6 +66,56 @@ pub(crate) fn looks_like_soft_wrapped_prose(input: &str) -> bool {
                 && !looks_like_aligned_columns_line(line)
                 && line.contains(' ')
         })
+}
+
+pub(crate) fn looks_like_yaml_mapping_input(input: &str) -> bool {
+    let lines: Vec<_> = input
+        .lines()
+        .map(str::trim_end)
+        .filter(|line| !line.trim().is_empty())
+        .collect();
+
+    if lines.len() < 3 {
+        return false;
+    }
+
+    let mapping_lines = lines
+        .iter()
+        .filter(|line| looks_like_yaml_mapping_line(line))
+        .count();
+    let top_level_lines = lines
+        .iter()
+        .filter(|line| !line.starts_with(char::is_whitespace) && looks_like_yaml_mapping_line(line))
+        .count();
+    let nested_lines = lines
+        .iter()
+        .filter(|line| line.starts_with(char::is_whitespace) && looks_like_yaml_mapping_line(line))
+        .count();
+
+    top_level_lines >= 2 && nested_lines >= 1 && mapping_lines * 2 >= lines.len()
+}
+
+fn looks_like_yaml_mapping_line(line: &str) -> bool {
+    let trimmed = line.trim();
+
+    if trimmed.is_empty()
+        || trimmed.starts_with("```")
+        || trimmed.starts_with('>')
+        || trimmed.starts_with('#')
+        || trimmed.starts_with('-')
+    {
+        return false;
+    }
+
+    let Some((key, rest)) = trimmed.split_once(':') else {
+        return false;
+    };
+
+    if key.is_empty() || key.chars().any(char::is_whitespace) {
+        return false;
+    }
+
+    rest.is_empty() || rest.starts_with(' ')
 }
 
 pub(crate) fn looks_like_reaction_snippet(input: &str) -> bool {

@@ -202,3 +202,20 @@ fn auto_declines_to_rewrite_indented_command_example_fixture() {
         fixture_output("auto/ambiguous/indented-command-example")
     );
 }
+
+#[test]
+fn auto_preserves_openapi_yaml_structure() {
+    let input = "\
+openapi: 3.0.0
+info:
+  title: Example API
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      summary: List pets
+";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, input);
+}

@@ -58,20 +58,22 @@ impl CommandSpec {
 pub struct SystemClipboard {
     read_command: CommandSpec,
     write_command: CommandSpec,
+    list_types_command: Option<CommandSpec>,
     preferred_text_types: Option<Vec<String>>,
 }
 
 impl SystemClipboard {
     pub fn new() -> Self {
-        Self::with_commands_and_text_types(
+        Self::with_commands_and_text_types_and_type_list(
             CommandSpec::new("wl-paste"),
             CommandSpec::new("wl-copy"),
+            Some(CommandSpec::new("wl-paste").with_arg("--list-types")),
             Some(default_preferred_text_types()),
         )
     }
 
     pub fn with_commands(read_command: CommandSpec, write_command: CommandSpec) -> Self {
-        Self::with_commands_and_text_types(read_command, write_command, None)
+        Self::with_commands_and_text_types_and_type_list(read_command, write_command, None, None)
     }
 
     pub fn with_commands_and_text_types(
@@ -79,9 +81,24 @@ impl SystemClipboard {
         write_command: CommandSpec,
         preferred_text_types: Option<Vec<String>>,
     ) -> Self {
+        Self::with_commands_and_text_types_and_type_list(
+            read_command,
+            write_command,
+            None,
+            preferred_text_types,
+        )
+    }
+
+    pub fn with_commands_and_text_types_and_type_list(
+        read_command: CommandSpec,
+        write_command: CommandSpec,
+        list_types_command: Option<CommandSpec>,
+        preferred_text_types: Option<Vec<String>>,
+    ) -> Self {
         Self {
             read_command,
             write_command,
+            list_types_command,
             preferred_text_types,
         }
     }
@@ -96,6 +113,20 @@ impl Default for SystemClipboard {
 impl ClipboardBackend for SystemClipboard {
     fn read_text(&self) -> Result<String, ClipboardError> {
         if let Some(preferred_text_types) = &self.preferred_text_types {
+            if let Some(list_types_command) = &self.list_types_command {
+                let offered_types = list_offered_types(list_types_command)?;
+
+                if let Some(text_type) = preferred_offered_text_type(&offered_types) {
+                    let extra_args = [String::from("--type"), text_type];
+                    let output = run_command(&self.read_command, &extra_args)?;
+                    return String::from_utf8(output.stdout).map_err(|_| ClipboardError::NonText);
+                }
+
+                if !clipboard_offers_text(&offered_types, preferred_text_types) {
+                    return Err(ClipboardError::NonText);
+                }
+            }
+
             for text_type in preferred_text_types {
                 let extra_args = [String::from("--type"), text_type.clone()];
                 match run_command(&self.read_command, &extra_args) {
@@ -221,6 +252,49 @@ fn default_preferred_text_types() -> Vec<String> {
     .into_iter()
     .map(str::to_string)
     .collect()
+}
+
+fn list_offered_types(list_types_command: &CommandSpec) -> Result<Vec<String>, ClipboardError> {
+    let output = run_command(list_types_command, &[])?;
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(str::to_string)
+        .collect())
+}
+
+fn preferred_offered_text_type(offered_types: &[String]) -> Option<String> {
+    for preferred in default_preferred_text_types() {
+        if let Some(matched) = offered_types
+            .iter()
+            .find(|value| value.eq_ignore_ascii_case(&preferred))
+        {
+            return Some(matched.clone());
+        }
+    }
+
+    offered_types
+        .iter()
+        .find(|value| value.to_ascii_lowercase().starts_with("text/plain;"))
+        .cloned()
+}
+
+fn clipboard_offers_text(offered_types: &[String], preferred_text_types: &[String]) -> bool {
+    let preferred_set = preferred_text_types
+        .iter()
+        .map(|value| value.to_ascii_lowercase())
+        .collect::<Vec<_>>();
+
+    offered_types.iter().any(|offered| {
+        let lower = offered.to_ascii_lowercase();
+
+        preferred_set.iter().any(|preferred| preferred == &lower)
+            || lower.starts_with("text/")
+            || lower.starts_with("text;")
+            || lower.starts_with("text/plain;")
+            || matches!(lower.as_str(), "utf8_string" | "string" | "text")
+    })
 }
 
 fn requested_type_is_unavailable(detail: &str) -> bool {
