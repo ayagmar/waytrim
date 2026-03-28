@@ -158,6 +158,14 @@ fn prose_preserves_heredoc_command_block_while_stripping_shared_margin() {
 }
 
 #[test]
+fn prose_preserves_heredoc_command_block_with_redirect() {
+    let input = "   python - <<'PY' > /tmp/out\n   print(\"hi\")\n   PY\n";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, "python - <<'PY' > /tmp/out\nprint(\"hi\")\nPY\n");
+}
+
+#[test]
 fn prose_preserves_real_tui_copied_install_command_block_fixture() {
     let input = fixture_input("prose/docs/watcher-install-command-block");
     let output = run_waytrim(&["prose"], &input);
@@ -243,6 +251,14 @@ fn prose_preserves_indented_block_fixture() {
             .any(|value| value == "indented sections")
     );
     assert_eq!(output, fixture_output("prose/negative/indented-block"));
+}
+
+#[test]
+fn prose_preserves_pure_indented_block() {
+    let input = "    this should stay indented\n    across two lines\n";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
 }
 
 #[test]

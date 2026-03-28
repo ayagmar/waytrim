@@ -302,15 +302,41 @@ pub(crate) fn strip_prompt(line: &str) -> Option<&str> {
 
 pub(crate) fn heredoc_delimiter(line: &str) -> Option<String> {
     let (_, suffix) = line.rsplit_once("<<")?;
-    let suffix = suffix.trim();
-    let suffix = suffix.strip_prefix('-').unwrap_or(suffix);
-    let delimiter = suffix.trim_matches(|ch| matches!(ch, '\'' | '"'));
+    let suffix = suffix.trim_start();
+    let suffix = suffix
+        .strip_prefix('-')
+        .map(str::trim_start)
+        .unwrap_or(suffix);
+    let delimiter =
+        quoted_heredoc_delimiter(suffix).or_else(|| unquoted_heredoc_delimiter(suffix))?;
 
     if delimiter.is_empty() || delimiter.chars().any(char::is_whitespace) {
         return None;
     }
 
     Some(delimiter.to_string())
+}
+
+fn quoted_heredoc_delimiter(suffix: &str) -> Option<&str> {
+    let quote = suffix
+        .chars()
+        .next()
+        .filter(|ch| matches!(ch, '\'' | '"'))?;
+    let rest = &suffix[quote.len_utf8()..];
+    let end = rest.find(quote)?;
+    Some(&rest[..end])
+}
+
+fn unquoted_heredoc_delimiter(suffix: &str) -> Option<&str> {
+    let delimiter = suffix
+        .split(|ch: char| ch.is_whitespace() || matches!(ch, '|' | '>' | '<' | ';' | '&' | ')'))
+        .next()?;
+
+    if delimiter.is_empty() {
+        return None;
+    }
+
+    Some(delimiter)
 }
 
 pub(crate) fn blockquote_prefix(trimmed: &str) -> Option<&str> {

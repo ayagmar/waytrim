@@ -164,6 +164,14 @@ fn auto_leaves_indented_block_fixture_unchanged() {
 }
 
 #[test]
+fn auto_leaves_pure_indented_block_unchanged() {
+    let input = "    this should stay indented\n    across two lines\n";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
 fn auto_keeps_prose_preferred_fixture_unchanged_when_conservative() {
     let input = fixture_input("auto/ambiguous/prose-preferred-wrap");
     let output = run_waytrim(&["auto"], &input);

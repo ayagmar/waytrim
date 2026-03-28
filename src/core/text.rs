@@ -16,6 +16,11 @@ pub(crate) fn normalize_heading_padding(line: &str) -> String {
 
 pub(crate) fn strip_uniform_copied_margin(input: &str) -> String {
     let without_gutter = strip_uniform_leading_gutter(input);
+
+    if is_pure_indented_block(&without_gutter) {
+        return without_gutter;
+    }
+
     strip_uniform_leading_whitespace(&without_gutter)
 }
 
@@ -137,6 +142,24 @@ fn common_whitespace_prefix(left: &str, right: &str) -> String {
         .collect()
 }
 
+fn is_pure_indented_block(input: &str) -> bool {
+    let mut saw_non_empty = false;
+
+    for line in input.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+
+        if !line.starts_with("    ") && !line.starts_with('\t') {
+            return false;
+        }
+
+        saw_non_empty = true;
+    }
+
+    saw_non_empty
+}
+
 pub(crate) fn normalize_inline_spacing(line: &str) -> String {
     let mut result = String::with_capacity(line.len());
     let mut last_was_whitespace = false;
@@ -224,5 +247,12 @@ mod tests {
             strip_uniform_copied_margin(input),
             "First line\n\nSecond line\n"
         );
+    }
+
+    #[test]
+    fn leaves_pure_indented_block_unchanged() {
+        let input = "    this should stay indented\n    across two lines\n";
+
+        assert_eq!(strip_uniform_copied_margin(input), input);
     }
 }
