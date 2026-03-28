@@ -71,7 +71,7 @@ The CLI reads from stdin and writes cleaned text to stdout by default. `--previe
 
 ### `prose`
 - primary mode
-- repairs wrapped paragraphs, copy-induced spacing noise, obvious blank-line noise inside one paragraph, and copy-induced heading padding
+- repairs wrapped paragraphs, copy-induced spacing noise, copied TUI gutter prefixes, obvious blank-line noise inside one paragraph, and copy-induced heading padding
 - preserves visible structure such as bullets, headings, blockquotes, fenced code blocks, indented sections, alignment-sensitive / table-ish text, and obvious standalone command blocks inside mixed prose snippets
 - repairs obvious wrapped blockquotes while leaving fenced code, aligned columns, and standalone command blocks untouched
 
@@ -259,7 +259,7 @@ Fixtures live under `tests/fixtures/` and are organized by mode first, then sour
 
 Current corpus coverage includes:
 - AI-terminal wrapped prose, spacing-noise wraps, wrapped inline-code followups, spacing-noise paragraphs, blank-line noise, and heading-padding cleanup
-- TUI status-update bullets and real TUI-copied watcher bullets with edge-padding noise
+- TUI status-update bullets, real TUI-copied watcher bullets with edge-padding noise, and copied vertical-gutter prose
 - PI/TUI wrapped prose paragraphs
 - PI/TUI wrapped bullet and numbered-list continuations
 - wrapped doc and PI blockquotes

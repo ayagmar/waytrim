@@ -300,6 +300,19 @@ pub(crate) fn strip_prompt(line: &str) -> Option<&str> {
     None
 }
 
+pub(crate) fn heredoc_delimiter(line: &str) -> Option<String> {
+    let (_, suffix) = line.rsplit_once("<<")?;
+    let suffix = suffix.trim();
+    let suffix = suffix.strip_prefix('-').unwrap_or(suffix);
+    let delimiter = suffix.trim_matches(|ch| matches!(ch, '\'' | '"'));
+
+    if delimiter.is_empty() || delimiter.chars().any(char::is_whitespace) {
+        return None;
+    }
+
+    Some(delimiter.to_string())
+}
+
 pub(crate) fn blockquote_prefix(trimmed: &str) -> Option<&str> {
     Some(trimmed.strip_prefix('>')?.trim_start())
 }
@@ -444,6 +457,8 @@ pub(crate) fn should_collapse_blank_line_between(previous: &str, next: &str) -> 
 
     previous.contains(' ')
         && next.contains(' ')
+        && word_count(previous) >= 3
+        && word_count(next) >= 3
         && next
             .chars()
             .next()
@@ -455,4 +470,8 @@ pub(crate) fn should_collapse_blank_line_between(previous: &str, next: &str) -> 
         && !looks_like_shell_line(next)
         && !looks_like_aligned_columns_line(previous)
         && !looks_like_aligned_columns_line(next)
+}
+
+fn word_count(line: &str) -> usize {
+    line.split_whitespace().count()
 }

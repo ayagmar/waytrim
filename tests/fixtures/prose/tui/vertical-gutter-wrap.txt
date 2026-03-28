@@ -1,0 +1,12 @@
+│ I re-checked this one. java -jar does fail here for invalid manifest values.
+│
+│ The JAR spec says Enable-Native-Access only supports ALL-UNNAMED for executable jars:
+│ https://docs.oracle.com/en/java/javase/25/docs/specs/jar/jar.html
+│
+│ With a minimal jar using:
+│
+│ Enable-Native-Access: SOME-MODULE
+│
+│ java -jar on Java 25 fails with:
+│
+│ Error: illegal value "SOME-MODULE" for Enable-Native-Access manifest attribute. Only ALL-UNNAMED is allowed

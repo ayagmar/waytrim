@@ -1,0 +1,3 @@
+notes: copied TUI prose with a uniform vertical gutter prefix
+preserve: paragraphs, links
+avoid: gutter-noise, rewrite

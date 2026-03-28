@@ -19,6 +19,17 @@ fn auto_falls_back_to_minimal_prose_safe_cleanup_when_ambiguous() {
 }
 
 #[test]
+fn auto_strips_shared_copied_margin_without_flattening_internal_indentation() {
+    let input = "   cat <<'EOF'\n   public class Main {\n       System.out.println(\"hi\");\n   }\n   EOF\n";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(
+        output,
+        "cat <<'EOF'\npublic class Main {\n    System.out.println(\"hi\");\n}\nEOF\n"
+    );
+}
+
+#[test]
 fn auto_collapses_single_reaction_line_without_trailing_newline() {
     let input = ":rofl:\n";
     let output = run_waytrim(&["auto"], input);
@@ -96,6 +107,14 @@ fn auto_keeps_real_tui_copied_systemctl_command_block_conservative() {
         output,
         fixture_output("prose/docs/watcher-systemctl-command-block")
     );
+}
+
+#[test]
+fn auto_repairs_prose_with_uniform_vertical_gutter_fixture() {
+    let input = fixture_input("prose/tui/vertical-gutter-wrap");
+    let output = run_waytrim(&["auto"], &input);
+
+    assert_eq!(output, fixture_output("prose/tui/vertical-gutter-wrap"));
 }
 
 #[test]
