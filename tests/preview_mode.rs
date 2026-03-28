@@ -36,6 +36,16 @@ fn preview_shows_pi_answer_wrap_changes() {
 }
 
 #[test]
+fn preview_shows_vertical_gutter_cleanup_changes() {
+    let input = fixture_input("prose/tui/vertical-gutter-wrap");
+    let output = run_waytrim(&["prose", "--preview"], &input);
+
+    assert!(output.contains("--- before"));
+    assert!(output.contains("+++ after"));
+    assert!(output.contains("+The JAR spec says Enable-Native-Access only supports ALL-UNNAMED for executable jars: https://docs.oracle.com/en/java/javase/25/docs/specs/jar/jar.html"));
+}
+
+#[test]
 fn preview_repairs_mixed_pi_prose_without_collapsing_command_block() {
     let input = fixture_input("prose/pi/mixed-command-block");
     let output = run_waytrim(&["prose", "--preview"], &input);

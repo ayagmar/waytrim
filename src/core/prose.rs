@@ -1,37 +1,37 @@
 use super::command::repair_command;
 use super::detect::{
-    blockquote_prefix, is_blockquote_continuation_line, is_command_block_continuation_line,
-    is_list_continuation_line, is_list_item_line, is_protected_line,
-    looks_like_aligned_columns_line, looks_like_reaction_snippet, looks_like_shell_line,
-    looks_like_yaml_mapping_input, should_collapse_blank_line_between,
+    blockquote_prefix, heredoc_delimiter, is_blockquote_continuation_line,
+    is_command_block_continuation_line, is_list_continuation_line, is_list_item_line,
+    is_protected_line, looks_like_aligned_columns_line, looks_like_reaction_snippet,
+    looks_like_shell_line, looks_like_yaml_mapping_input, should_collapse_blank_line_between,
 };
 use super::policy::RepairPolicy;
 use super::report::ExplainStep;
 use super::text::{
     finish_with_newline, minimal_line_preserving_cleanup, normalize_heading_padding,
-    normalize_inline_spacing, normalize_reaction_snippet, strip_uniform_single_leading_space,
+    normalize_inline_spacing, normalize_reaction_snippet, strip_uniform_copied_margin,
 };
 
 pub(crate) fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<ExplainStep>) {
-    if looks_like_reaction_snippet(input) {
+    let input = strip_uniform_copied_margin(input);
+
+    if looks_like_reaction_snippet(&input) {
         return (
-            normalize_reaction_snippet(input),
+            normalize_reaction_snippet(&input),
             vec![ExplainStep {
                 message: String::from("collapsed reaction snippet into one line"),
             }],
         );
     }
 
-    if looks_like_yaml_mapping_input(input) {
+    if looks_like_yaml_mapping_input(&input) {
         return (
-            minimal_line_preserving_cleanup(input),
+            minimal_line_preserving_cleanup(&input),
             vec![ExplainStep {
                 message: String::from("preserved structured yaml-like text"),
             }],
         );
     }
-
-    let input = strip_uniform_single_leading_space(input);
     let mut output_lines = Vec::new();
     let mut paragraph = Vec::new();
     let mut paragraph_start_line = None;
@@ -39,6 +39,7 @@ pub(crate) fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<E
     let mut active_quote: Option<String> = None;
     let mut in_fenced_code = false;
     let mut in_command_block = false;
+    let mut active_heredoc: Option<String> = None;
     let mut in_aligned_block = false;
     let mut explain = Vec::new();
 
@@ -48,6 +49,14 @@ pub(crate) fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<E
         let line_number = index + 1;
         let line = raw_line.trim_end();
         let trimmed = line.trim();
+
+        if let Some(delimiter) = active_heredoc.as_ref() {
+            output_lines.push(line.to_string());
+            if trimmed == delimiter {
+                active_heredoc = None;
+            }
+            continue;
+        }
 
         if trimmed.starts_with("```") {
             flush_paragraph(
@@ -86,6 +95,7 @@ pub(crate) fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<E
             flush_list_item(&mut list_item, &mut output_lines);
             flush_quote(&mut active_quote, &mut output_lines);
             in_command_block = false;
+            active_heredoc = None;
 
             if output_lines.last().is_none_or(|last| !last.is_empty()) {
                 output_lines.push(String::new());
@@ -142,6 +152,7 @@ pub(crate) fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<E
 
             if policy.protect_command_blocks {
                 in_command_block = true;
+                active_heredoc = heredoc_delimiter(line);
                 output_lines.push(line.to_string());
                 continue;
             }
@@ -180,6 +191,12 @@ pub(crate) fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<E
         }
 
         if in_command_block {
+            if let Some(delimiter) = heredoc_delimiter(line) {
+                active_heredoc = Some(delimiter);
+                output_lines.push(line.to_string());
+                continue;
+            }
+
             if is_command_block_continuation_line(line) {
                 output_lines.push(line.to_string());
                 continue;

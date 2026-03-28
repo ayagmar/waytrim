@@ -300,6 +300,50 @@ pub(crate) fn strip_prompt(line: &str) -> Option<&str> {
     None
 }
 
+pub(crate) fn heredoc_delimiter(line: &str) -> Option<String> {
+    let (_, suffix) = line.rsplit_once("<<")?;
+    let suffix = suffix.trim_start();
+    let suffix = suffix
+        .strip_prefix('-')
+        .map(str::trim_start)
+        .unwrap_or(suffix);
+    let delimiter = quoted_heredoc_delimiter(suffix)
+        .or_else(|| backslash_escaped_heredoc_delimiter(suffix))
+        .or_else(|| unquoted_heredoc_delimiter(suffix))?;
+
+    if delimiter.is_empty() || delimiter.chars().any(char::is_whitespace) {
+        return None;
+    }
+
+    Some(delimiter.to_string())
+}
+
+fn quoted_heredoc_delimiter(suffix: &str) -> Option<&str> {
+    let quote = suffix
+        .chars()
+        .next()
+        .filter(|ch| matches!(ch, '\'' | '"'))?;
+    let rest = &suffix[quote.len_utf8()..];
+    let end = rest.find(quote)?;
+    Some(&rest[..end])
+}
+
+fn backslash_escaped_heredoc_delimiter(suffix: &str) -> Option<&str> {
+    unquoted_heredoc_delimiter(suffix.strip_prefix('\\')?)
+}
+
+fn unquoted_heredoc_delimiter(suffix: &str) -> Option<&str> {
+    let delimiter = suffix
+        .split(|ch: char| ch.is_whitespace() || matches!(ch, '|' | '>' | '<' | ';' | '&' | ')'))
+        .next()?;
+
+    if delimiter.is_empty() {
+        return None;
+    }
+
+    Some(delimiter)
+}
+
 pub(crate) fn blockquote_prefix(trimmed: &str) -> Option<&str> {
     Some(trimmed.strip_prefix('>')?.trim_start())
 }
@@ -319,6 +363,7 @@ pub(crate) fn is_protected_line(line: &str) -> bool {
         || is_bullet_line(trimmed)
         || is_numbered_line(trimmed)
         || is_reaction_line(trimmed)
+        || looks_like_box_drawing_line(trimmed)
 }
 
 pub(crate) fn looks_like_aligned_columns_line(line: &str) -> bool {
@@ -352,6 +397,18 @@ pub(crate) fn looks_like_aligned_columns_line(line: &str) -> bool {
     }
 
     saw_wide_gap && segments >= 2
+}
+
+fn looks_like_box_drawing_line(trimmed: &str) -> bool {
+    trimmed
+        .chars()
+        .filter(|ch| is_box_drawing_marker(*ch))
+        .count()
+        >= 2
+}
+
+fn is_box_drawing_marker(ch: char) -> bool {
+    matches!(ch, '│' | '┃' | '▏' | '▕' | '❘' | '¦')
 }
 
 pub(crate) fn is_bullet_line(trimmed: &str) -> bool {
@@ -444,6 +501,8 @@ pub(crate) fn should_collapse_blank_line_between(previous: &str, next: &str) -> 
 
     previous.contains(' ')
         && next.contains(' ')
+        && word_count(previous) >= 3
+        && word_count(next) >= 3
         && next
             .chars()
             .next()
@@ -455,4 +514,8 @@ pub(crate) fn should_collapse_blank_line_between(previous: &str, next: &str) -> 
         && !looks_like_shell_line(next)
         && !looks_like_aligned_columns_line(previous)
         && !looks_like_aligned_columns_line(next)
+}
+
+fn word_count(line: &str) -> usize {
+    line.split_whitespace().count()
 }

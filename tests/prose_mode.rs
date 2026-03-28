@@ -51,6 +51,16 @@ fn prose_repairs_real_tui_copied_watcher_bullets_fixture() {
 }
 
 #[test]
+fn prose_strips_uniform_vertical_gutter_fixture() {
+    let input = fixture_input("prose/tui/vertical-gutter-wrap");
+    let output = run_waytrim(&["prose"], &input);
+    let meta = fixture_meta("prose/tui/vertical-gutter-wrap");
+
+    assert!(meta.avoid.iter().any(|value| value == "gutter-noise"));
+    assert_eq!(output, fixture_output("prose/tui/vertical-gutter-wrap"));
+}
+
+#[test]
 fn prose_repairs_wrapped_blockquote_fixture() {
     let input = fixture_input("prose/docs/blockquote-wrap");
     let output = run_waytrim(&["prose"], &input);
@@ -134,6 +144,36 @@ fn prose_preserves_mixed_docs_command_block_fixture() {
 
     assert!(meta.preserve.iter().any(|value| value == "command blocks"));
     assert_eq!(output, fixture_output("prose/docs/mixed-command-block"));
+}
+
+#[test]
+fn prose_preserves_heredoc_command_block_while_stripping_shared_margin() {
+    let input = "   cat > \"$tmp/MANIFEST.MF\" <<'EOF'\n   Manifest-Version: 1.0\n   Main-Class: Main\n   EOF\n";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(
+        output,
+        "cat > \"$tmp/MANIFEST.MF\" <<'EOF'\nManifest-Version: 1.0\nMain-Class: Main\nEOF\n"
+    );
+}
+
+#[test]
+fn prose_preserves_heredoc_command_block_with_redirect() {
+    let input = "   python - <<'PY' > /tmp/out\n   print(\"hi\")\n   PY\n";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, "python - <<'PY' > /tmp/out\nprint(\"hi\")\nPY\n");
+}
+
+#[test]
+fn prose_preserves_backslash_escaped_heredoc_and_resumes_prose() {
+    let input = "To create it, run:\ncat <<\\EOF\nhi\nEOF\nThen inspect\nthe output.\n";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(
+        output,
+        "To create it, run:\ncat <<\\EOF\nhi\nEOF\nThen inspect the output.\n"
+    );
 }
 
 #[test]
@@ -222,6 +262,14 @@ fn prose_preserves_indented_block_fixture() {
             .any(|value| value == "indented sections")
     );
     assert_eq!(output, fixture_output("prose/negative/indented-block"));
+}
+
+#[test]
+fn prose_preserves_pure_indented_block() {
+    let input = "    this should stay indented\n    across two lines\n";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
 }
 
 #[test]
@@ -379,6 +427,22 @@ tags:
   - alpha
   - beta
 ";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn prose_preserves_yaml_with_uniform_vertical_gutter() {
+    let input = "│ name: value\n│ other: value\n";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, "name: value\nother: value\n");
+}
+
+#[test]
+fn prose_preserves_table_like_vertical_gutter_content() {
+    let input = "│ Name │ Value │\n│ Foo │ Bar │\n";
     let output = run_waytrim(&["prose"], input);
 
     assert_eq!(output, input);

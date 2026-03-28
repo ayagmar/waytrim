@@ -19,6 +19,17 @@ fn auto_falls_back_to_minimal_prose_safe_cleanup_when_ambiguous() {
 }
 
 #[test]
+fn auto_strips_shared_copied_margin_without_flattening_internal_indentation() {
+    let input = "   cat <<'EOF'\n   public class Main {\n       System.out.println(\"hi\");\n   }\n   EOF\n";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(
+        output,
+        "cat <<'EOF'\npublic class Main {\n    System.out.println(\"hi\");\n}\nEOF\n"
+    );
+}
+
+#[test]
 fn auto_collapses_single_reaction_line_without_trailing_newline() {
     let input = ":rofl:\n";
     let output = run_waytrim(&["auto"], input);
@@ -99,6 +110,14 @@ fn auto_keeps_real_tui_copied_systemctl_command_block_conservative() {
 }
 
 #[test]
+fn auto_repairs_prose_with_uniform_vertical_gutter_fixture() {
+    let input = fixture_input("prose/tui/vertical-gutter-wrap");
+    let output = run_waytrim(&["auto"], &input);
+
+    assert_eq!(output, fixture_output("prose/tui/vertical-gutter-wrap"));
+}
+
+#[test]
 fn auto_declines_to_rewrite_mixed_pi_command_block_fixture() {
     let input = fixture_input("auto/ambiguous/pi-mixed-command-block");
     let output = run_waytrim(&["auto"], &input);
@@ -142,6 +161,14 @@ fn auto_leaves_indented_block_fixture_unchanged() {
     let output = run_waytrim(&["auto"], &input);
 
     assert_eq!(output, fixture_output("prose/negative/indented-block"));
+}
+
+#[test]
+fn auto_leaves_pure_indented_block_unchanged() {
+    let input = "    this should stay indented\n    across two lines\n";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, input);
 }
 
 #[test]
@@ -265,6 +292,22 @@ tags:
   - alpha
   - beta
 ";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn auto_preserves_yaml_with_uniform_vertical_gutter() {
+    let input = "│ name: value\n│ other: value\n";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, "name: value\nother: value\n");
+}
+
+#[test]
+fn auto_preserves_table_like_vertical_gutter_content() {
+    let input = "│ Name │ Value │\n│ Foo │ Bar │\n";
     let output = run_waytrim(&["auto"], input);
 
     assert_eq!(output, input);
