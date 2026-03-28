@@ -307,8 +307,9 @@ pub(crate) fn heredoc_delimiter(line: &str) -> Option<String> {
         .strip_prefix('-')
         .map(str::trim_start)
         .unwrap_or(suffix);
-    let delimiter =
-        quoted_heredoc_delimiter(suffix).or_else(|| unquoted_heredoc_delimiter(suffix))?;
+    let delimiter = quoted_heredoc_delimiter(suffix)
+        .or_else(|| backslash_escaped_heredoc_delimiter(suffix))
+        .or_else(|| unquoted_heredoc_delimiter(suffix))?;
 
     if delimiter.is_empty() || delimiter.chars().any(char::is_whitespace) {
         return None;
@@ -325,6 +326,10 @@ fn quoted_heredoc_delimiter(suffix: &str) -> Option<&str> {
     let rest = &suffix[quote.len_utf8()..];
     let end = rest.find(quote)?;
     Some(&rest[..end])
+}
+
+fn backslash_escaped_heredoc_delimiter(suffix: &str) -> Option<&str> {
+    unquoted_heredoc_delimiter(suffix.strip_prefix('\\')?)
 }
 
 fn unquoted_heredoc_delimiter(suffix: &str) -> Option<&str> {
@@ -358,6 +363,7 @@ pub(crate) fn is_protected_line(line: &str) -> bool {
         || is_bullet_line(trimmed)
         || is_numbered_line(trimmed)
         || is_reaction_line(trimmed)
+        || looks_like_box_drawing_line(trimmed)
 }
 
 pub(crate) fn looks_like_aligned_columns_line(line: &str) -> bool {
@@ -391,6 +397,18 @@ pub(crate) fn looks_like_aligned_columns_line(line: &str) -> bool {
     }
 
     saw_wide_gap && segments >= 2
+}
+
+fn looks_like_box_drawing_line(trimmed: &str) -> bool {
+    trimmed
+        .chars()
+        .filter(|ch| is_box_drawing_marker(*ch))
+        .count()
+        >= 2
+}
+
+fn is_box_drawing_marker(ch: char) -> bool {
+    matches!(ch, '│' | '┃' | '▏' | '▕' | '❘' | '¦')
 }
 
 pub(crate) fn is_bullet_line(trimmed: &str) -> bool {

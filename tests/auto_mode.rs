@@ -296,3 +296,19 @@ tags:
 
     assert_eq!(output, input);
 }
+
+#[test]
+fn auto_preserves_yaml_with_uniform_vertical_gutter() {
+    let input = "│ name: value\n│ other: value\n";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, "name: value\nother: value\n");
+}
+
+#[test]
+fn auto_preserves_table_like_vertical_gutter_content() {
+    let input = "│ Name │ Value │\n│ Foo │ Bar │\n";
+    let output = run_waytrim(&["auto"], input);
+
+    assert_eq!(output, input);
+}

@@ -13,25 +13,25 @@ use super::text::{
 };
 
 pub(crate) fn repair_prose(input: &str, policy: &RepairPolicy) -> (String, Vec<ExplainStep>) {
-    if looks_like_reaction_snippet(input) {
+    let input = strip_uniform_copied_margin(input);
+
+    if looks_like_reaction_snippet(&input) {
         return (
-            normalize_reaction_snippet(input),
+            normalize_reaction_snippet(&input),
             vec![ExplainStep {
                 message: String::from("collapsed reaction snippet into one line"),
             }],
         );
     }
 
-    if looks_like_yaml_mapping_input(input) {
+    if looks_like_yaml_mapping_input(&input) {
         return (
-            minimal_line_preserving_cleanup(input),
+            minimal_line_preserving_cleanup(&input),
             vec![ExplainStep {
                 message: String::from("preserved structured yaml-like text"),
             }],
         );
     }
-
-    let input = strip_uniform_copied_margin(input);
     let mut output_lines = Vec::new();
     let mut paragraph = Vec::new();
     let mut paragraph_start_line = None;

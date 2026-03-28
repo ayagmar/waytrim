@@ -76,7 +76,11 @@ fn strip_uniform_leading_gutter(input: &str) -> String {
             continue;
         }
 
-        if !has_copied_gutter(line) {
+        let Some(content) = copied_gutter_content(line) else {
+            return input.to_string();
+        };
+
+        if content.chars().any(is_copied_gutter_marker) {
             return input.to_string();
         }
 
@@ -100,19 +104,28 @@ fn strip_uniform_leading_gutter(input: &str) -> String {
     }
 }
 
-fn has_copied_gutter(line: &str) -> bool {
+fn copied_gutter_content(line: &str) -> Option<&str> {
     let trimmed = line.trim_start_matches(char::is_whitespace);
-    let mut chars = trimmed.chars();
-    let Some(marker) = chars.next() else {
-        return false;
-    };
+    let mut chars = trimmed.char_indices();
+    let (_, marker) = chars.next()?;
 
-    is_copied_gutter_marker(marker) && chars.next().is_none_or(char::is_whitespace)
+    if !is_copied_gutter_marker(marker) {
+        return None;
+    }
+
+    let content = chars.next().map_or("", |(index, _)| &trimmed[index..]);
+
+    if content.chars().next().is_some_and(|ch| !ch.is_whitespace()) {
+        return None;
+    }
+
+    Some(content)
 }
 
 fn strip_leading_gutter(line: &str) -> String {
     let leading_whitespace_len = line.len() - line.trim_start_matches(char::is_whitespace).len();
-    let mut chars = line[leading_whitespace_len..].chars();
+    let trimmed = &line[leading_whitespace_len..];
+    let mut chars = trimmed.chars();
     let Some(marker) = chars.next() else {
         return line.to_string();
     };
@@ -247,6 +260,13 @@ mod tests {
             strip_uniform_copied_margin(input),
             "First line\n\nSecond line\n"
         );
+    }
+
+    #[test]
+    fn leaves_table_like_gutter_content_unchanged() {
+        let input = "│ Name │ Value │\n│ Foo │ Bar │\n";
+
+        assert_eq!(strip_uniform_copied_margin(input), input);
     }
 
     #[test]

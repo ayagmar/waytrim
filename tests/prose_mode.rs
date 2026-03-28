@@ -166,6 +166,17 @@ fn prose_preserves_heredoc_command_block_with_redirect() {
 }
 
 #[test]
+fn prose_preserves_backslash_escaped_heredoc_and_resumes_prose() {
+    let input = "To create it, run:\ncat <<\\EOF\nhi\nEOF\nThen inspect\nthe output.\n";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(
+        output,
+        "To create it, run:\ncat <<\\EOF\nhi\nEOF\nThen inspect the output.\n"
+    );
+}
+
+#[test]
 fn prose_preserves_real_tui_copied_install_command_block_fixture() {
     let input = fixture_input("prose/docs/watcher-install-command-block");
     let output = run_waytrim(&["prose"], &input);
@@ -416,6 +427,22 @@ tags:
   - alpha
   - beta
 ";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, input);
+}
+
+#[test]
+fn prose_preserves_yaml_with_uniform_vertical_gutter() {
+    let input = "│ name: value\n│ other: value\n";
+    let output = run_waytrim(&["prose"], input);
+
+    assert_eq!(output, "name: value\nother: value\n");
+}
+
+#[test]
+fn prose_preserves_table_like_vertical_gutter_content() {
+    let input = "│ Name │ Value │\n│ Foo │ Bar │\n";
     let output = run_waytrim(&["prose"], input);
 
     assert_eq!(output, input);
